@@ -45,6 +45,49 @@ function syncLeaderToSupabase() {
     }).catch(() => {});
 }
 
+function restoreProgressFromSupabase() {
+    const vkId = PlatformSDK.vkUserId || new URLSearchParams(location.search).get('vk_user_id');
+    if (!vkId || !SUPABASE_URL.startsWith('http') || typeof state === 'undefined') return;
+
+    fetch(SUPABASE_URL + '/rest/v1/leaders?game_id=eq.' + GAME_ID + '&user_id=eq.vk_' + vkId + '&limit=1', {
+        headers: getSupabaseHeaders()
+    })
+    .then(r => r.json())
+    .then(rows => {
+        if (!Array.isArray(rows) || rows.length === 0) return;
+        const row = rows;
+        let changed = false;
+
+        if ((row.score || 1) > (state.level || 1)) {
+            state.level = row.score;
+            state.bestScore = Math.max(state.bestScore || 1, row.score);
+            changed = true;
+        }
+        if ((row.coins || 0) > (state.coins || 0)) {
+            state.coins = row.coins;
+            changed = true;
+        }
+        if (typeof extra !== 'undefined') {
+            if ((row.rank || 1) > (extra.accLvl || 1)) {
+                extra.accLvl = row.rank;
+                changed = true;
+            }
+            if (row.name && row.name !== 'Игрок' && !extra.customName) {
+                extra.customName = row.name;
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            if (typeof saveProgress === 'function') saveProgress();
+            if (typeof saveExtra === 'function') saveExtra();
+            if (typeof initLevel === 'function') initLevel();
+            if (typeof renderBoard === 'function') renderBoard();
+        }
+    })
+    .catch(() => {});
+}
+
 async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
     const modal = document.getElementById('lb-modal');
     const listEl = document.getElementById('lb-list') || document.querySelector('#lb-modal .shop-list, #lb-modal .lb-content');
@@ -157,6 +200,7 @@ function shareGameWithFriends(withBonus) {
     const isVk = location.search.includes('vk_') || location.hash.includes('vk_') || (document.referrer && document.referrer.includes('vk.'));
     if (isVk) {
         PlatformSDK.type = 'vk';
+        setTimeout(restoreProgressFromSupabase, 300);
         const hookVk = () => {
             if (typeof vkBridge === 'undefined' || PlatformSDK.vkHooked) return;
             PlatformSDK.vkHooked = true;
