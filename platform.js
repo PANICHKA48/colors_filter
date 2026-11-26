@@ -264,11 +264,12 @@ function setupVkBridgeHooks() {
         }
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectVkShareButtons);
-    } else {
-        injectVkShareButtons();
-    }
+     if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', injectVkShareButtons);
+        } else {
+            injectVkShareButtons();
+        }
+    
 })();
 
 function shareGameWithFriends(withBonus) {
