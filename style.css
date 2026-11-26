@@ -728,3 +728,13 @@ input, textarea {
     .icon-btn { width: 29px !important; height: 29px !important; min-width: 29px !important; padding: 0 !important; font-size: 13px !important; }
     .coins-pill { padding: 4px 8px !important; font-size: 12px !important; gap: 4px !important; }
 }
+
+/* Поднимаем модальное окно к верху экрана при вводе текста с клавиатуры телефона */
+.modal-overlay:has(input:focus) {
+    align-items: flex-start !important;
+    padding-top: 14px !important;
+}
+
+.modal-box input:focus {
+    scroll-margin-top: 20px;
+}
