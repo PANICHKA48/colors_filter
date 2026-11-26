@@ -738,3 +738,18 @@ input, textarea {
 .modal-box input:focus {
     scroll-margin-top: 20px;
 }
+
+/* Растягиваем игру в полноэкранном режиме на ПК */
+:fullscreen .app,
+:fullscreen .container,
+:fullscreen #game-container,
+:fullscreen main {
+    max-width: 900px !important;
+    width: 95vw !important;
+}
+
+:fullscreen .board,
+:fullscreen .tubes-container {
+    transform: scale(1.22);
+    transform-origin: center center;
+}
