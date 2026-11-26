@@ -300,18 +300,20 @@ function shareGameWithFriends(withBonus) {
                 fsBtn.title = 'На весь экран';
                 fsBtn.textContent = '⛶';
                 const applyFullscreenScale = () => {
-                    const container = document.querySelector('.game-container, .app, #app, body > div');
+                    const wrap = document.getElementById('game-wrapper') || document.querySelector('.app-container') || document.body;
                     if (document.fullscreenElement) {
-                        setTimeout(() => {
-                            const scale = Math.min(window.innerWidth / 440, window.innerHeight / 780, 1.5);
-                            if (container) {
-                                container.style.transform = 'scale(' + scale.toFixed(2) + ')';
-                                container.style.transformOrigin = 'center center';
+                        document.querySelectorAll('body > div').forEach(el => {
+                            if (el.offsetHeight > 300) {
+                                el.style.maxWidth = '820px';
+                                el.style.width = '90vw';
                             }
-                        }, 100);
+                        });
                         fsBtn.textContent = '🗗';
                     } else {
-                        if (container) container.style.transform = '';
+                        document.querySelectorAll('body > div').forEach(el => {
+                            el.style.maxWidth = '';
+                            el.style.width = '';
+                        });
                         fsBtn.textContent = '⛶';
                     }
                 };
