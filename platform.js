@@ -4,7 +4,7 @@ const GAME_ID = 'neon_sort';
 
 window.PlatformSDK = {
     type: 'web',
-    vkUserId: null,
+    vkUserId: new URLSearchParams(location.search).get('vk_user_id') || null,
     vkPhoto: '',
     lastShareBonusDay: localStorage.getItem('vk_share_bonus_day') || ''
 };
@@ -19,7 +19,9 @@ function getSupabaseHeaders(extraHeaders) {
 
 function syncLeaderToSupabase() {
     if (!SUPABASE_URL.startsWith('http') || typeof state === 'undefined') return;
-    // Если мы внутри ВК, но ID пользователя ещё не пришёл от VK Bridge — ждём и не создаём дубль web_...
+    if (!PlatformSDK.vkUserId) {
+        PlatformSDK.vkUserId = new URLSearchParams(location.search).get('vk_user_id') || null;
+    }
     if (PlatformSDK.type === 'vk' && !PlatformSDK.vkUserId) return;
 
     const uid = PlatformSDK.vkUserId ? 'vk_' + PlatformSDK.vkUserId : (localStorage.getItem('guest_uid') || (() => {
