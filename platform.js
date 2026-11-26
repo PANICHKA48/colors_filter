@@ -2,6 +2,8 @@ const SUPABASE_URL = 'https://vnrwplmznprluqgafcke.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZucndwbG16bnBybHVxZ2FmY2tlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2OTgyNjIsImV4cCI6MjExMTI3NDI2Mn0.idFgNFunD4Z0JtchsAvEt1--wltWRLC-o7WbAuv3la0';
 const GAME_ID = 'neon_sort';
 
+let cloudRestored = false;
+
 window.PlatformSDK = {
     type: 'web',
     vkUserId: new URLSearchParams(location.search).get('vk_user_id') || null,
@@ -19,6 +21,7 @@ function getSupabaseHeaders(extraHeaders) {
 
 function syncLeaderToSupabase() {
     if (!SUPABASE_URL.startsWith('http') || SUPABASE_KEY.includes('СЮДА_ВСТАВЬ') || typeof state === 'undefined') return;
+    if (PlatformSDK.type === 'vk' && !cloudRestored) return;
     if (!PlatformSDK.vkUserId) {
         PlatformSDK.vkUserId = new URLSearchParams(location.search).get('vk_user_id') || null;
     }
@@ -62,6 +65,7 @@ function restoreProgressFromSupabase() {
     })
     .then(r => r.json())
     .then(rows => {
+        cloudRestored = true;
         if (!Array.isArray(rows) || rows.length === 0) return;
         const [row] = rows;
         let changed = false;
@@ -114,7 +118,7 @@ function restoreProgressFromSupabase() {
             if (typeof renderBoard === 'function') renderBoard();
         }
     })
-    .catch(() => {});
+    .catch(() => { cloudRestored = true; });
 }
 
 async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
