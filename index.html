@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Сортировка: Неоновые Колбы</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/sdk.js"></script>
+</head>
+<body>
+
+<div id="splash">
+    <h1>PANICHKA GAMES</h1>
+    <span>LOADING...</span>
+</div>
+
+<!-- Главный вертикальный контейнер игры (адаптируется под телефон и компьютер) -->
+<div id="game-wrapper">
+
+    <!-- 1. ВЕРХНЯЯ ПАНЕЛЬ: Топ, Магазин, Монеты, Звук и Язык -->
+    <div class="top-bar">
+        <div class="btn-group">
+            <button class="icon-btn" onclick="openLeaderboard()" title="Таблица лидеров">🏆</button>
+            <button class="icon-btn" onclick="openShop()" title="Магазин стилей">🛒</button>
+        </div>
+
+        <!-- Кошелёк игрока -->
+        <div class="coins-pill">
+            <span class="coin-icon">$</span>
+            <span id="coins-display">0</span>
+        </div>
+
+        <div class="btn-group">
+            <button class="icon-btn" id="sound-btn" onclick="toggleSound()" title="Звук">🔊</button>
+            <button class="icon-btn" id="lang-btn" onclick="cycleLang()" title="Язык">RU</button>
+        </div>
+    </div>
+
+    <!-- 2. ШАПКА УРОВНЯ: Номер уровня и счётчик ходов -->
+    <div class="header">
+        <div class="stat-box">
+            <span class="stat-label" data-t="level">Этап</span>
+            <span class="stat-value" id="level-display">1</span>
+        </div>
+        <div class="stat-box" style="text-align: right;">
+            <span class="stat-label" data-t="moves">Ходы</span>
+            <span class="stat-value" id="moves-display" style="color:#38bdf8;">0</span>
+        </div>
+    </div>
+
+    <!-- 3. ИГРОВОЕ ПОЛЕ: Сюда скрипт будет расставлять колбы с шариками -->
+    <div id="board-area">
+        <div id="tubes-container"></div>
+
+        <!-- МОДАЛЬНОЕ ОКНО ПОБЕДЫ НА УРОВНЕ -->
+        <div id="win-modal" class="modal">
+            <h2 style="color:#4ade80;" data-t="winTitle">Уровень пройден!</h2>
+            <p><span data-t="rewardText">Награда:</span> <strong id="win-reward" style="color:#fbbf24;">+$50</strong></p>
+            <button class="action-btn btn-ad modal-btn" onclick="claimWin(2)">
+                📺 <span data-t="claimX2">Забрать x2 (Реклама)</span>
+            </button>
+            <button class="action-btn btn-next modal-btn" onclick="claimWin(1)">
+                ➡️ <span data-t="nextLevel">Следующий уровень</span>
+            </button>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО ТАБЛИЦЫ ЛИДЕРОВ -->
+        <div id="lb-modal" class="modal">
+            <h2>🏆 <span data-t="lbTitle">Лучшие игроки</span></h2>
+            <div class="modal-list" id="lb-list"></div>
+            <button class="action-btn btn-gray modal-btn-sm" onclick="closeModals()"><span data-t="close">Закрыть</span></button>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО МАГАЗИНА СКИНОВ (ШАРЫ / КРИСТАЛЛЫ / ПЛАНЕТЫ) -->
+        <div id="shop-modal" class="modal">
+            <h2>🛒 <span data-t="shopTitle">Магазин</span></h2>
+            <div class="modal-list" id="shop-list"></div>
+            <button class="action-btn btn-gray modal-btn-sm" onclick="closeModals()"><span data-t="close">Закрыть</span></button>
+        </div>
+    </div>
+
+    <!-- 4. НИЖНЯЯ ПАНЕЛЬ БУСТЕРОВ (Монетизация через рекламу и монеты) -->
+    <div class="controls">
+        <!-- Отмена последнего хода (бесплатно 1 раз или за монеты / рекламу) -->
+        <button class="action-btn btn-undo" onclick="undoMove()">
+            ↩️ <span data-t="undo">Отмена</span> <small id="undo-cost">($20)</small>
+        </button>
+
+        <!-- Добавить пустую колбу за просмотр рекламы -->
+        <button class="action-btn btn-ad" id="add-tube-btn" onclick="addExtraTubeAd()">
+            📺 <span data-t="addTube">+1 Колба</span>
+        </button>
+
+        <!-- Перезапустить текущий уровень -->
+        <button class="action-btn btn-gray" onclick="restartLevel()" title="Заново">🔄</button>
+    </div>
+
+</div>
+
+
+<script src="game.js"></script>
+<script src="features.js"></script>
+<script src="progression.js"></script>
+<script src="https://unpkg.com"></script>
+<script src="platform.js"></script>
+</body>
+</html>
