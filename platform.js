@@ -9,7 +9,7 @@ window.PlatformSDK = {
 };
 
 (function initUniversalPlatform() {
-    const isVk = location.search.includes('vk_app_id') || location.hash.includes('vk_app_id');
+    const isVk = location.search.includes('vk_') || location.hash.includes('vk_') || (document.referrer && document.referrer.includes('vk.'));;
 
     // 1. ВЕТКА ВКОНТАКТЕ (VK BRIDGE)
     if (isVk && typeof vkBridge !== 'undefined') {
