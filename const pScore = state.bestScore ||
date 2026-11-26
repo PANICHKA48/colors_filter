@@ -30,7 +30,7 @@ function syncLeaderToSupabase() {
         return id;
     })());
     const pName = (typeof extra !== 'undefined' && extra.customName) ? extra.customName : 'Игрок';
-    const pScore = state.bestScore || state.level || 1;
+    const pScore = Math.max(state.bestScore || 1, state.level || 1);
     const pRank = (typeof extra !== 'undefined' && extra.accLvl) ? extra.accLvl : 1;
     const pCoins = state.coins || 0;
 
@@ -178,7 +178,7 @@ function shareGameWithFriends(withBonus) {
                     try {
                         const p = JSON.parse(item.value);
                         if (item.key === 'vk_save_state' && typeof state !== 'undefined' && (p.level || 1) > (state.level || 1)) { Object.assign(state, p); upd = true; }
-                        if (item.key === 'vk_save_extra' && typeof extra !== 'undefined' && (p.accExp || 0) > (extra.accExp || 0)) { Object.assign(extra, p); upd = true; }
+                        if (item.key === 'vk_save_extra' && typeof extra !== 'undefined' && ((p.accLvl || 1) > (extra.accLvl || 1) || (p.accExp || 0) > (extra.accExp || 0))) { Object.assign(extra, p); upd = true; }
                         if (item.key === 'vk_save_prog' && typeof prog !== 'undefined') { Object.assign(prog, p); upd = true; }
                     } catch (e) {}
                 });
@@ -289,36 +289,22 @@ function shareGameWithFriends(withBonus) {
 })();
 
 (function setupMobileModerationCompliance() {
-    // 1. Обязательное отключение звука при сворачивании вкладки или блокировке экрана телефона
     document.addEventListener('visibilitychange', () => {
         if (typeof audioCtx !== 'undefined' && audioCtx) {
-            if (document.hidden) {
-                audioCtx.suspend().catch(() => {});
-            } else if (typeof state !== 'undefined' && state.sound !== false) {
-                audioCtx.resume().catch(() => {});
-            }
+            if (document.hidden) audioCtx.suspend().catch(() => {});
+            else if (typeof state !== 'undefined' && state.sound !== false) audioCtx.resume().catch(() => {});
         }
     });
-
     window.addEventListener('pagehide', () => {
-        if (typeof audioCtx !== 'undefined' && audioCtx) {
-            audioCtx.suspend().catch(() => {});
-        }
+        if (typeof audioCtx !== 'undefined' && audioCtx) audioCtx.suspend().catch(() => {});
     });
 
-    // 2. Отступ сверху в мобильном клиенте ВК, чтобы системная кнопка закрытия (••• | ✕) не перекрывала иконки
-    const applyVkSafeTop = () => {
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (PlatformSDK.type === 'vk' && isMobile) {
-            document.body.style.paddingTop = 'max(env(safe-area-inset-top, 0px), 44px)';
+    setInterval(() => {
+        if (typeof state !== 'undefined' && state.level > (state.bestScore || 1)) {
+            state.bestScore = state.level;
+            syncLeaderToSupabase();
         }
-    };
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', applyVkSafeTop);
-    } else {
-        applyVkSafeTop();
-    }
+    }, 2000);
 })();
 
 (function guaranteeSolvableLevels() {
