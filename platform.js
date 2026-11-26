@@ -19,6 +19,9 @@ function getSupabaseHeaders(extraHeaders) {
 
 function syncLeaderToSupabase() {
     if (!SUPABASE_URL.startsWith('http') || typeof state === 'undefined') return;
+    // Если мы внутри ВК, но ID пользователя ещё не пришёл от VK Bridge — ждём и не создаём дубль web_...
+    if (PlatformSDK.type === 'vk' && !PlatformSDK.vkUserId) return;
+
     const uid = PlatformSDK.vkUserId ? 'vk_' + PlatformSDK.vkUserId : (localStorage.getItem('guest_uid') || (() => {
         const id = 'web_' + Math.random().toString(36).slice(2, 10);
         localStorage.setItem('guest_uid', id);
@@ -149,10 +152,10 @@ function shareGameWithFriends(withBonus) {
         const hookVk = () => {
             if (typeof vkBridge === 'undefined' || PlatformSDK.vkHooked) return;
             PlatformSDK.vkHooked = true;
-            vkBridge.send('VKWebAppInit').catch(() => {});
             vkBridge.send('VKWebAppGetUserInfo').then(u => {
                 PlatformSDK.vkUserId = u.id;
                 PlatformSDK.vkPhoto = u.photo_100 || u.photo_50 || '';
+                localStorage.removeItem('guest_uid');
                 if (u.first_name && typeof extra !== 'undefined' && !extra.customName) {
                     extra.customName = (u.first_name + ' ' + (u.last_name || '')).trim().slice(0, 16);
                     if (typeof saveExtra === 'function') saveExtra();
@@ -214,84 +217,64 @@ function shareGameWithFriends(withBonus) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBtn); else addBtn();
 })();
 (function protectWinRewardsAndStreakBug() {
-    let x2UsedThisLevel = false;
-    let x2Busy = false;
-    let streakRewardLevel = -1;
+    let x2ClaimedLevel = -1;
+    let streakShownLevel = -1;
 
-    // 1. Защита от повторного начисления бонуса серии на одном и том же уровне
+    // 1. Подавляем повторные уведомления о серии на одном и том же этапе
     if (typeof window.showFloatText === 'function') {
         const origFloat = window.showFloatText;
         window.showFloatText = function(text, color) {
-            if (typeof text === 'string' && text.includes('СУНДУК СЕРИИ')) {
+            if (typeof text === 'string' && (text.includes('Серия x') || text.includes('СУНДУК СЕРИИ'))) {
                 const curLvl = typeof state !== 'undefined' ? state.level : 0;
-                if (streakRewardLevel === curLvl) return;
-                streakRewardLevel = curLvl;
+                if (streakShownLevel === curLvl) return;
+                streakShownLevel = curLvl;
             }
             return origFloat.apply(this, arguments);
         };
     }
 
-    // 2. Защита показа рекламы с наградой (не даёт вызывать повторно во время/после просмотра)
-    const origShowRewarded = window.showRewarded;
-    window.showRewarded = function(onSuccess) {
-        if (x2Busy || x2UsedThisLevel) return;
-        x2Busy = true;
-
-        const wrappedSuccess = function() {
-            x2Busy = false;
-            x2UsedThisLevel = true;
-            if (typeof onSuccess === 'function') onSuccess();
-        };
-
-        if (typeof origShowRewarded === 'function') {
-            origShowRewarded(wrappedSuccess);
-            setTimeout(() => { x2Busy = false; }, 2500);
-        } else {
-            x2Busy = false;
-        }
-    };
-
-    // 3. Жесткая блокировка кнопки «Забрать x2 (Реклама)» в окне победы
+    // 2. Следим за окном победы и блокируем повторный фарм кнопки x2 после успешного получения
     setInterval(() => {
         const winModal = document.getElementById('win-modal');
-        if (!winModal || winModal.style.display === 'none' || winModal.style.display === '') {
-            x2UsedThisLevel = false;
-            x2Busy = false;
+        if (!winModal || winModal.style.display === 'none' || winModal.style.display === '') return;
+
+        const curLvl = typeof state !== 'undefined' ? state.level : 0;
+        const x2Btn = Array.from(winModal.querySelectorAll('button')).find(
+            b => b.textContent.includes('Забрать x2') || b.textContent.includes('Награда x2')
+        );
+        if (!x2Btn) return;
+
+        if (x2ClaimedLevel === curLvl) {
+            x2Btn.disabled = true;
+            x2Btn.style.opacity = '0.5';
+            x2Btn.style.pointerEvents = 'none';
+            x2Btn.textContent = '✅ Награда x2 получена';
             return;
         }
 
-        const x2Btn = Array.from(winModal.querySelectorAll('button')).find(
-            b => b.textContent.includes('Забрать x2') || b.textContent.includes('x2')
-        );
-
-        if (x2Btn && !x2Btn.dataset.hardGuarded) {
-            x2Btn.dataset.hardGuarded = '1';
-            const origClick = x2Btn.onclick;
-
-            x2Btn.onclick = function(e) {
-                if (x2UsedThisLevel || x2Busy) return;
-                x2Busy = true;
-                x2Btn.disabled = true;
-                x2Btn.style.opacity = '0.5';
-                x2Btn.style.pointerEvents = 'none';
-
-                const prevCoins = typeof state !== 'undefined' ? state.coins : 0;
-                if (typeof origClick === 'function') origClick.call(this, e);
-
-                setTimeout(() => {
-                    const nowCoins = typeof state !== 'undefined' ? state.coins : 0;
-                    x2Busy = false;
-                    if (nowCoins > prevCoins) {
-                        x2UsedThisLevel = true;
+        if (!x2Btn.dataset.guardedClick) {
+            x2Btn.dataset.guardedClick = '1';
+            x2Btn.addEventListener('click', function(e) {
+                if (x2ClaimedLevel === curLvl) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                    return;
+                }
+                const coinsBefore = typeof state !== 'undefined' ? state.coins : 0;
+                // Проверяем через 700 мс после клика/рекламы, начислилась ли награда
+                const checkTimer = setInterval(() => {
+                    const coinsAfter = typeof state !== 'undefined' ? state.coins : 0;
+                    if (coinsAfter > coinsBefore) {
+                        x2ClaimedLevel = curLvl;
+                        x2Btn.disabled = true;
+                        x2Btn.style.opacity = '0.5';
+                        x2Btn.style.pointerEvents = 'none';
                         x2Btn.textContent = '✅ Награда x2 получена';
-                    } else {
-                        // Если рекламу закрыли досрочно — разрешаем 1 повторную попытку, но не бесконечно
-                        x2Btn.disabled = false;
-                        x2Btn.style.opacity = '1';
-                        x2Btn.style.pointerEvents = 'auto';
+                        clearInterval(checkTimer);
                     }
-                }, 500);
-            };
+                }, 400);
+                setTimeout(() => clearInterval(checkTimer), 45000);
+            }, true);
         }
-    }, 250);
+    }, 300);
 })();
