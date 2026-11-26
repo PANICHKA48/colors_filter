@@ -704,13 +704,17 @@ header .icon-btn, .header .icon-btn, .top-bar .icon-btn {
 
 #streak-val {
     text-shadow: 0 0 10px rgba(249, 115, 22, 0.55) !important;
+}
 
+/* === МОБИЛЬНАЯ АДАПТАЦИЯ (iOS / ANDROID / ПК) === */
 html, body {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
     overscroll-behavior: none !important;
-    -webkit-user-select: none !important;
-    user-select: none !important;
     -webkit-touch-callout: none !important;
-    touch-action: manipulation !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
 
 input, textarea {
@@ -718,54 +722,9 @@ input, textarea {
     user-select: text !important;
 }
 
-html, body {
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    overflow: hidden !important;
-    padding-top: env(safe-area-inset-top, 0px) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    box-sizing: border-box !important;
-}
-
 @media (max-width: 440px) {
-    /* 1. Сжимаем верхнюю панель, чтобы кнопка Ru полностью помещалась в экран */
-    .top-bar {
-        gap: 3px !important;
-        padding: 4px 4px !important;
-        justify-content: space-between !important;
-    }
-    .top-bar .btn-group {
-        gap: 3px !important;
-    }
-    .icon-btn {
-        width: 30px !important;
-        height: 30px !important;
-        min-width: 30px !important;
-        padding: 0 !important;
-        font-size: 13px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    .coins-badge, #coins-display, .balance-pill {
-        padding: 4px 8px !important;
-        font-size: 12px !important;
-        gap: 4px !important;
-        white-space: nowrap !important;
-    }
-
-    /* 2. Выравниваем нижние кнопки бустеров, чтобы текст не вылезал за границы */
-    .controls, .bottom-bar, .action-bar {
-        gap: 4px !important;
-        padding: 4px 6px !important;
-    }
-    .controls button, .bottom-bar button, .action-bar button {
-        padding: 8px 4px !important;
-        font-size: 11px !important;
-        line-height: 1.15 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        min-width: 0 !important;
-    }
+    .top-bar { gap: 3px !important; padding: 4px !important; }
+    .top-bar .btn-group { gap: 3px !important; }
+    .icon-btn { width: 29px !important; height: 29px !important; min-width: 29px !important; padding: 0 !important; font-size: 13px !important; }
+    .coins-pill { padding: 4px 8px !important; font-size: 12px !important; gap: 4px !important; }
 }
