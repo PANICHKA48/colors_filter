@@ -316,7 +316,17 @@ function shareGameWithFriends(withBonus) {
         if (typeof window.generateLevel === 'function') {
             const origGen = window.generateLevel;
             window.generateLevel = function(lvl) {
-                origGen.apply(this, arguments);
+                // Пропорционально масштабируем входной уровень в шкалу сложности 1..60 так,
+                // чтобы пик сложности (11 цветов / 13 колб) наступал ровно на 100-м этапе
+                const scaledLvl = lvl <= 1 ? 1 : Math.min(60, Math.max(1, Math.round(lvl * 0.6)));
+                origGen.call(this, scaledLvl);
+
+                // Возвращаем отображение реального номера этапа (lvl) на экране
+                if (typeof state !== 'undefined') state.level = lvl;
+                const lvlBadge = document.getElementById('level-val') || document.getElementById('lvl-num');
+                if (lvlBadge) lvlBadge.textContent = lvl;
+
+                // Гарантируем минимум 2 пустые колбы при льде или тайных шарах (защита от тупиков)
                 if (typeof tubes !== 'undefined' && Array.isArray(tubes)) {
                     const hasFrozen = typeof frozenTubes !== 'undefined' && frozenTubes.length > 0;
                     const hasMystery = typeof isMysteryStage === 'function' && isMysteryStage(lvl);
