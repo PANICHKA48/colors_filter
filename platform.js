@@ -12,7 +12,6 @@ window.PlatformSDK = {
 function getSupabaseHeaders(extraHeaders) {
     return Object.assign({
         'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
         'Content-Type': 'application/json'
     }, extraHeaders || {});
 }
