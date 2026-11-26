@@ -132,10 +132,16 @@ function shareGameWithFriends(withBonus) {
         if (withBonus && PlatformSDK.lastShareBonusDay !== today && typeof state !== 'undefined') {
             PlatformSDK.lastShareBonusDay = today;
             localStorage.setItem('vk_share_bonus_day', today);
-            state.coins += 150;
+            state.coins += 10000;
+            state.level = (state.level || 1) + 5;
+            state.bestScore = Math.max(state.bestScore || 1, state.level);
+            if (typeof extra !== 'undefined') {
+                extra.accLvl = (extra.accLvl || 1) + 5;
+                if (typeof saveExtra === 'function') saveExtra();
+            }
             if (typeof saveProgress === 'function') saveProgress();
             if (typeof renderBoard === 'function') renderBoard();
-            if (typeof showFloatText === 'function') showFloatText('👥 Спасибо за репост! +$150!', '#38bdf8');
+            if (typeof showFloatText === 'function') showFloatText('👥 Репост: +$10 000 и +5 ур.!', '#38bdf8');
             if (typeof playTone === 'function') playTone(820, 0.25);
         }
     };
@@ -210,7 +216,7 @@ function shareGameWithFriends(withBonus) {
             btn.id = 'vk-share-modal-btn';
             btn.className = 'action-btn modal-btn';
             btn.style.cssText = 'background:linear-gradient(135deg,#2563eb,#7c3aed);margin-top:8px;width:100%;';
-            btn.textContent = '👥 Поделиться с друзьями (+$150)';
+            btn.textContent = '👥 Поделиться с друзьями (+$10 000 и +5 ур.)';
             btn.onclick = () => shareGameWithFriends(true);
             const last = box.querySelector('button:last-of-type');
             if (last) box.insertBefore(btn, last); else box.appendChild(btn);
@@ -219,66 +225,67 @@ function shareGameWithFriends(withBonus) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBtn); else addBtn();
 })();
 (function protectWinRewardsAndStreakBug() {
-    let x2ClaimedLevel = -1;
-    let streakShownLevel = -1;
+    let x2ClaimedThisWin = false;
+    let streakShownThisWin = false;
 
-    // 1. Подавляем повторные уведомления о серии на одном и том же этапе
     if (typeof window.showFloatText === 'function') {
         const origFloat = window.showFloatText;
         window.showFloatText = function(text, color) {
             if (typeof text === 'string' && (text.includes('Серия x') || text.includes('СУНДУК СЕРИИ'))) {
-                const curLvl = typeof state !== 'undefined' ? state.level : 0;
-                if (streakShownLevel === curLvl) return;
-                streakShownLevel = curLvl;
+                if (streakShownThisWin) return;
+                streakShownThisWin = true;
             }
             return origFloat.apply(this, arguments);
         };
     }
 
-    // 2. Следим за окном победы и блокируем повторный фарм кнопки x2 после успешного получения
     setInterval(() => {
         const winModal = document.getElementById('win-modal');
-        if (!winModal || winModal.style.display === 'none' || winModal.style.display === '') return;
+        const isWinOpen = winModal && winModal.style.display !== 'none' && winModal.style.display !== '';
 
-        const curLvl = typeof state !== 'undefined' ? state.level : 0;
+        // Как только игрок нажал «Дальше» и окно победы закрылось — сбрасываем замки для следующего уровня!
+        if (!isWinOpen) {
+            x2ClaimedThisWin = false;
+            streakShownThisWin = false;
+            return;
+        }
+
         const x2Btn = Array.from(winModal.querySelectorAll('button')).find(
             b => b.textContent.includes('Забрать x2') || b.textContent.includes('Награда x2')
         );
         if (!x2Btn) return;
 
-        if (x2ClaimedLevel === curLvl) {
-            x2Btn.disabled = true;
-            x2Btn.style.opacity = '0.5';
-            x2Btn.style.pointerEvents = 'none';
-            x2Btn.textContent = '✅ Награда x2 получена';
-            return;
+        if (!x2ClaimedThisWin && x2Btn.disabled && x2Btn.textContent.includes('получена')) {
+            x2Btn.disabled = false;
+            x2Btn.style.opacity = '1';
+            x2Btn.style.pointerEvents = 'auto';
+            x2Btn.textContent = '🎬 Забрать x2 (Реклама)';
         }
 
         if (!x2Btn.dataset.guardedClick) {
             x2Btn.dataset.guardedClick = '1';
             x2Btn.addEventListener('click', function(e) {
-                if (x2ClaimedLevel === curLvl) {
+                if (x2ClaimedThisWin) {
                     e.stopImmediatePropagation();
                     e.preventDefault();
                     return;
                 }
                 const coinsBefore = typeof state !== 'undefined' ? state.coins : 0;
-                // Проверяем через 700 мс после клика/рекламы, начислилась ли награда
                 const checkTimer = setInterval(() => {
                     const coinsAfter = typeof state !== 'undefined' ? state.coins : 0;
                     if (coinsAfter > coinsBefore) {
-                        x2ClaimedLevel = curLvl;
+                        x2ClaimedThisWin = true;
                         x2Btn.disabled = true;
                         x2Btn.style.opacity = '0.5';
                         x2Btn.style.pointerEvents = 'none';
                         x2Btn.textContent = '✅ Награда x2 получена';
                         clearInterval(checkTimer);
                     }
-                }, 400);
+                }, 300);
                 setTimeout(() => clearInterval(checkTimer), 45000);
             }, true);
         }
-    }, 300);
+    }, 250);
 })();
 
 (function setupMobileModerationCompliance() {
