@@ -288,8 +288,7 @@ function shareGameWithFriends(withBonus) {
         }
     };
 
-    if (typeof vkBridge !== 'undefined') {
-        // Пробуем сначала нативное приглашение друзей в игру, если недоступно — репост ссылки
+   if (typeof vkBridge !== 'undefined') {
         vkBridge.send('VKWebAppShowInviteBox', {})
             .then(rewardOnce)
             .catch(() => {
