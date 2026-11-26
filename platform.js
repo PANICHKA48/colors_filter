@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://vnrwplmznprluqgafcke.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://vnrwplmznprluqgafcke.supabase.com';
 const SUPABASE_KEY = 'sb_publishable_-PTgDlvlE2S49OHWxjK_lw_8HIcBZ-E';
 const GAME_ID = 'neon_sort';
 
@@ -9,8 +9,16 @@ window.PlatformSDK = {
     lastShareBonusDay: localStorage.getItem('vk_share_bonus_day') || ''
 };
 
+function getSupabaseHeaders(extraHeaders) {
+    const h = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
+    // Для старых JWT-ключей (eyJ...) добавляем Authorization, для новых sb_publishable_ — только apikey
+    if (SUPABASE_KEY.startsWith('eyJ')) h['Authorization'] = 'Bearer ' + SUPABASE_KEY;
+    return Object.assign(h, extraHeaders || {});
+}
+
 function syncLeaderToSupabase() {
-    if (!SUPABASE_URL.startsWith('http') || typeof state === 'undefined') return;
+    if (!SUPABASE_URL.startsWith('http') || !SUPABASE_KEY.startsWith('sb_') && !SUPABASE_KEY.startsWith('eyJ')) return;
+    if (typeof state === 'undefined') return;
 
     const uid = PlatformSDK.vkUserId
         ? 'vk_' + PlatformSDK.vkUserId
@@ -27,12 +35,7 @@ function syncLeaderToSupabase() {
 
     fetch(SUPABASE_URL + '/rest/v1/leaders?on_conflict=game_id,user_id', {
         method: 'POST',
-        headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + SUPABASE_KEY,
-            'Content-Type': 'application/json',
-            'Prefer': 'resolution=merge-duplicates'
-        },
+        headers: getSupabaseHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
         body: JSON.stringify({
             game_id: GAME_ID,
             user_id: uid,
@@ -62,7 +65,11 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
         { key: 'coins', label: '💰 Баланс' }
     ].forEach(t => {
         const b = document.createElement('button');
-        b.className = 'tab-btn' + (sortBy === t.key ? ' active' : '');
+        const active = sortBy === t.key;
+        b.style.cssText = 'padding:8px 4px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;' +
+            'background:' + (active ? 'rgba(56,189,248,0.22)' : 'rgba(255,255,255,0.06)') + ';' +
+            'border:1px solid ' + (active ? '#38bdf8' : 'rgba(255,255,255,0.14)') + ';' +
+            'color:' + (active ? '#ffffff' : '#cbd5e1') + ';';
         b.textContent = t.label;
         b.onclick = () => openGlobalSupabaseLeaderboard(t.key);
         tabsRow.appendChild(b);
@@ -70,21 +77,21 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
     listEl.appendChild(tabsRow);
 
     const statusDiv = document.createElement('div');
-    statusDiv.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;';
+    statusDiv.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;font-size:13px;';
     statusDiv.textContent = '⏳ Загрузка мирового рейтинга...';
     listEl.appendChild(statusDiv);
 
     try {
         const res = await fetch(
             SUPABASE_URL + '/rest/v1/leaders?game_id=eq.' + GAME_ID + '&order=' + sortBy + '.desc&limit=50',
-            { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+            { headers: getSupabaseHeaders() }
         );
         const rows = await res.json();
         statusDiv.remove();
 
         if (!Array.isArray(rows) || rows.length === 0) {
             const empty = document.createElement('div');
-            empty.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;';
+            empty.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;font-size:13px;';
             empty.textContent = 'Пока нет записей. Пройди уровень, чтобы стать первым!';
             listEl.appendChild(empty);
             return;
@@ -132,65 +139,80 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
     }
 }
 
+function setupVkBridgeHooks() {
+    if (typeof vkBridge === 'undefined' || PlatformSDK.vkHooked) return;
+    PlatformSDK.vkHooked = true;
+
+    vkBridge.send('VKWebAppInit').catch(() => {});
+
+    vkBridge.send('VKWebAppGetUserInfo').then(u => {
+        PlatformSDK.vkUserId = u.id;
+        PlatformSDK.vkPhoto = u.photo_100 || u.photo_50 || '';
+        if (u.first_name && typeof extra !== 'undefined' && !extra.customName) {
+            extra.customName = (u.first_name + ' ' + (u.last_name || '')).trim().slice(0, 16);
+            if (typeof saveExtra === 'function') saveExtra();
+        }
+        syncLeaderToSupabase();
+    }).catch(() => {});
+
+    vkBridge.send('VKWebAppStorageGet', { keys: ['vk_save_state', 'vk_save_extra', 'vk_save_prog'] })
+        .then(res => {
+            if (!res || !res.keys) return;
+            let updated = false;
+            res.keys.forEach(item => {
+                if (!item.value) return;
+                try {
+                    const parsed = JSON.parse(item.value);
+                    if (item.key === 'vk_save_state' && typeof state !== 'undefined' && (parsed.level || 1) > (state.level || 1)) {
+                        Object.assign(state, parsed);
+                        updated = true;
+                    }
+                    if (item.key === 'vk_save_extra' && typeof extra !== 'undefined' && (parsed.accExp || 0) > (extra.accExp || 0)) {
+                        Object.assign(extra, parsed);
+                        updated = true;
+                    }
+                    if (item.key === 'vk_save_prog' && typeof prog !== 'undefined') {
+                        Object.assign(prog, parsed);
+                        updated = true;
+                    }
+                } catch (e) {}
+            });
+            if (updated) {
+                if (typeof saveProgress === 'function') saveProgress();
+                if (typeof renderBoard === 'function') renderBoard();
+            }
+        }).catch(() => {});
+
+    window.showInterstitial = function() {
+        isPaused = true;
+        vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' }).finally(() => { isPaused = false; });
+    };
+
+    window.showRewarded = function(onSuccess) {
+        isPaused = true;
+        vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' })
+            .then(res => { isPaused = false; if (res && res.result) onSuccess(); })
+            .catch(() => { isPaused = false; });
+    };
+}
+
 (function initUniversalPlatform() {
     const isVk = location.search.includes('vk_') || location.hash.includes('vk_') || (document.referrer && document.referrer.includes('vk.'));
 
     if (isVk) {
         PlatformSDK.type = 'vk';
-
-        if (typeof vkBridge !== 'undefined') {
-            vkBridge.send('VKWebAppInit').catch(() => {});
-
-            vkBridge.send('VKWebAppGetUserInfo').then(u => {
-                PlatformSDK.vkUserId = u.id;
-                PlatformSDK.vkPhoto = u.photo_100 || u.photo_50 || '';
-                if (u.first_name && typeof extra !== 'undefined' && !extra.customName) {
-                    extra.customName = (u.first_name + ' ' + (u.last_name || '')).trim().slice(0, 16);
-                    if (typeof saveExtra === 'function') saveExtra();
-                }
-                syncLeaderToSupabase();
-            }).catch(() => {});
-
-            vkBridge.send('VKWebAppStorageGet', { keys: ['vk_save_state', 'vk_save_extra', 'vk_save_prog'] })
-                .then(res => {
-                    if (!res || !res.keys) return;
-                    let updated = false;
-                    res.keys.forEach(item => {
-                        if (!item.value) return;
-                        try {
-                            const parsed = JSON.parse(item.value);
-                            if (item.key === 'vk_save_state' && typeof state !== 'undefined' && (parsed.level || 1) > (state.level || 1)) {
-                                Object.assign(state, parsed);
-                                updated = true;
-                            }
-                            if (item.key === 'vk_save_extra' && typeof extra !== 'undefined' && (parsed.accExp || 0) > (extra.accExp || 0)) {
-                                Object.assign(extra, parsed);
-                                updated = true;
-                            }
-                            if (item.key === 'vk_save_prog' && typeof prog !== 'undefined') {
-                                Object.assign(prog, parsed);
-                                updated = true;
-                            }
-                        } catch (e) {}
-                    });
-                    if (updated) {
-                        if (typeof saveProgress === 'function') saveProgress();
-                        if (typeof renderBoard === 'function') renderBoard();
-                    }
-                }).catch(() => {});
-
-            window.showInterstitial = function() {
-                isPaused = true;
-                vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' }).finally(() => { isPaused = false; });
-            };
-
-            window.showRewarded = function(onSuccess) {
-                isPaused = true;
-                vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'reward' })
-                    .then(res => { isPaused = false; if (res && res.result) onSuccess(); })
-                    .catch(() => { isPaused = false; });
-            };
-        }
+        setupVkBridgeHooks();
+        // Ждём до 4 секунд, пока догрузится динамический скрипт vk-bridge
+        let tries = 0;
+        const waitBridge = setInterval(() => {
+            tries++;
+            if (typeof vkBridge !== 'undefined') {
+                setupVkBridgeHooks();
+                clearInterval(waitBridge);
+            } else if (tries > 20) {
+                clearInterval(waitBridge);
+            }
+        }, 200);
 
         window.openLeaderboard = function() {
             syncLeaderToSupabase();
@@ -217,18 +239,7 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
     function injectVkShareButtons() {
         if (PlatformSDK.type !== 'vk') return;
 
-        const topLeft = document.querySelector('.top-bar .btn-group') || document.querySelector('.top-bar');
-        if (topLeft && !document.getElementById('vk-share-top-btn')) {
-            const topBtn = document.createElement('button');
-            topBtn.id = 'vk-share-top-btn';
-            topBtn.className = 'icon-btn';
-            topBtn.textContent = '👥';
-            topBtn.title = 'Поделиться с друзьями';
-            topBtn.style.borderColor = '#38bdf8';
-            topBtn.onclick = () => shareGameWithFriends(true);
-            topLeft.appendChild(topBtn);
-        }
-
+        // Вставляем кнопку только в окно победы/проигрыша, чтобы не сдвигать верхнюю панель иконок!
         const targetModal = document.getElementById('win-modal') || document.getElementById('gameover-modal');
         if (targetModal && !document.getElementById('vk-share-modal-btn')) {
             const box = targetModal.querySelector('.modal-content') || targetModal;
@@ -253,22 +264,27 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
 })();
 
 function shareGameWithFriends(withBonus) {
-    if (typeof vkBridge === 'undefined') return;
     const appId = new URLSearchParams(location.search).get('vk_app_id') || '';
-    const appUrl = appId ? 'https://vk.com' + appId : location.href.split('?')[0];
+    const appUrl = appId ? 'https://vk.com' + appId : location.href.split('?');
 
-    vkBridge.send('VKWebAppShare', { link: appUrl })
-        .then(() => {
-            const today = new Date().toDateString();
-            if (withBonus && PlatformSDK.lastShareBonusDay !== today && typeof state !== 'undefined') {
-                PlatformSDK.lastShareBonusDay = today;
-                localStorage.setItem('vk_share_bonus_day', today);
-                state.coins += 150;
-                if (typeof saveProgress === 'function') saveProgress();
-                if (typeof renderBoard === 'function') renderBoard();
-                if (typeof showFloatText === 'function') showFloatText('👥 Спасибо за репост! +$150!', '#38bdf8');
-                if (typeof playTone === 'function') playTone(820, 0.25);
-            }
-        })
-        .catch(() => {});
+    const rewardOnce = () => {
+        const today = new Date().toDateString();
+        if (withBonus && PlatformSDK.lastShareBonusDay !== today && typeof state !== 'undefined') {
+            PlatformSDK.lastShareBonusDay = today;
+            localStorage.setItem('vk_share_bonus_day', today);
+            state.coins += 150;
+            if (typeof saveProgress === 'function') saveProgress();
+            if (typeof renderBoard === 'function') renderBoard();
+            if (typeof showFloatText === 'function') showFloatText('👥 Спасибо за репост! +$150!', '#38bdf8');
+            if (typeof playTone === 'function') playTone(820, 0.25);
+        }
+    };
+
+    if (typeof vkBridge !== 'undefined') {
+        vkBridge.send('VKWebAppShare', { link: appUrl }).then(rewardOnce).catch(() => {});
+    } else if (window.parent && window.parent !== window) {
+        // Прямой резервный вызов окна репоста ВК через postMessage, если CDN не ответил
+        window.parent.postMessage({ handler: 'VKWebAppShare', params: { link: appUrl }, type: 'vk-connect' }, '*');
+        rewardOnce();
+    }
 }
