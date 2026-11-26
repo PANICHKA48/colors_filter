@@ -724,14 +724,45 @@ body {
     box-sizing: border-box !important;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 440px) {
+    /* 1. Сжимаем верхнюю панель, чтобы кнопка Ru полностью помещалась в экран */
     .top-bar {
-        gap: 4px !important;
-        padding-left: 4px !important;
-        padding-right: 4px !important;
+        gap: 3px !important;
+        padding: 4px 4px !important;
+        justify-content: space-between !important;
+    }
+    .top-bar .btn-group {
+        gap: 3px !important;
     }
     .icon-btn {
-        padding: 6px 8px !important;
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        padding: 0 !important;
         font-size: 13px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .coins-badge, #coins-display, .balance-pill {
+        padding: 4px 8px !important;
+        font-size: 12px !important;
+        gap: 4px !important;
+        white-space: nowrap !important;
+    }
+
+    /* 2. Выравниваем нижние кнопки бустеров, чтобы текст не вылезал за границы */
+    .controls, .bottom-bar, .action-bar {
+        gap: 4px !important;
+        padding: 4px 6px !important;
+    }
+    .controls button, .bottom-bar button, .action-bar button {
+        padding: 8px 4px !important;
+        font-size: 11px !important;
+        line-height: 1.15 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        min-width: 0 !important;
     }
 }
