@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://vnrwplmznprluqgafcke.supabase.com';
+const SUPABASE_URL = 'https://vnrwplmznprluqgafcke.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_-PTgDlvlE2S49OHWxjK_lw_8HIcBZ-E';
 const GAME_ID = 'neon_sort';
 
