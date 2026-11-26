@@ -6,22 +6,7 @@
     <title>Сортировка: Неоновые Колбы</title>
     <link rel="stylesheet" href="style.css">
     
-    <script>
-        try {
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ handler: 'VKWebAppInit', params: {}, type: 'vk-connect' }, '*');
-            }
-        } catch (e) {}
-        (function() {
-            var s = document.createElement('script');
-            s.async = true;
-            s.src = 'https://jsdelivr.net' + 'npm/@vkontakte/vk-bridge@2.15.11/dist/browser.min.js'
-            s.onload = function() {
-                if (typeof vkBridge !== 'undefined') vkBridge.send('VKWebAppInit').catch(() => {});
-            };
-            document.head.appendChild(s);
-        })();
-    </script>
+    <script src="vk-bridge.js"></script>
     <script>
         if (typeof vkBridge !== 'undefined') {
             vkBridge.send('VKWebAppInit').catch(() => {});
