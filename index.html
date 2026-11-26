@@ -5,20 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сортировка: Неоновые Колбы</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com"></script>
-<script>
-    // Безусловно инициализируем VK Bridge — вне ВК он просто тихо поймает catch и ничему не помешает
-    if (typeof vkBridge !== 'undefined') {
-        vkBridge.send('VKWebAppInit').catch(() => {});
-    }
-    // Яндекс SDK грузим только если игра запущена на серверах Яндекса
-    if (location.hostname.includes('yandex')) {
-        var s = document.createElement('script');
-        s.src = '/sdk.js';
-        document.head.appendChild(s);
-    }
-</script>
+    <script>
+        // Мгновенно снимаем спиннер загрузки ВКонтакте напрямую через postMessage (работает даже без CDN!)
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    handler: 'VKWebAppInit',
+                    params: {},
+                    type: 'vk-connect'
+                }, '*');
+            }
+        } catch (e) {}
     </script>
+    <script src="https://jsdelivr.net"></script>
+    <script>
+        if (typeof vkBridge !== 'undefined') {
+            vkBridge.send('VKWebAppInit').catch(() => {});
+        }
+        if (location.hostname.includes('yandex')) {
+            var s = document.createElement('script');
+            s.src = '/sdk.js';
+            document.head.appendChild(s);
+        }
+    </script>
+
 </head>
 <body>
 
