@@ -1031,8 +1031,8 @@ showFloatText = function(text, color) {
 
     var existing = box.querySelectorAll('.float-text');
     // Если на экране уже висит больше 2 плашек одновременно — убираем самую верхнюю (старую)
-    if (existing.length >= 3 && existing.at(0)) {
-        existing.at(0).remove();
+    if (existing.length >= 3 && existing[0]) {
+        existing[0].remove();
         existing = box.querySelectorAll('.float-text');
     }
 
@@ -1268,7 +1268,7 @@ renderBoard = function() {
 
 function spawnTubeConfetti(tubeIdx, colorHex) {
     var board = document.getElementById('board-area');
-    var tubeEl = document.querySelectorAll('#tubes-container .tube').item(tubeIdx);
+    var tubeEl = document.querySelectorAll('#tubes-container .tube')[tubeIdx];
     if (!board || !tubeEl) return;
 
     var bRect = board.getBoundingClientRect();
@@ -1279,7 +1279,7 @@ function spawnTubeConfetti(tubeIdx, colorHex) {
     for (var i = 0; i < 16; i++) {
         var spark = document.createElement('div');
         var size = 5 + Math.random() * 5;
-        var angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.4; // Вылет веером вверх из горлышка
+        var angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
         var dist = 45 + Math.random() * 65;
         var dx = Math.cos(angle) * dist;
         var dy = Math.sin(angle) * dist;
@@ -1303,15 +1303,14 @@ function spawnTubeConfetti(tubeIdx, colorHex) {
     }
 }
 
-// Запускаем фонтан искр сразу после прилёта последнего шара в собранную колбу
 var prevClickConfetti = onTubeClick;
 onTubeClick = function(idx) {
-    var doneBefore = tubes.map(t => t.length === TUBE_CAPACITY && t.every(c => c === t.at(0)));
+    var doneBefore = tubes.map(t => t.length === TUBE_CAPACITY && t.every(c => c === t[0]));
     prevClickConfetti(idx);
     tubes.forEach((t, tIdx) => {
-        var isNowDone = t.length === TUBE_CAPACITY && t.every(c => c === t.at(0));
-        if (isNowDone && !doneBefore.at(tIdx)) {
-            var colHex = COLORS.at(t.at(0)) || '#4ade80';
+        var isNowDone = t.length === TUBE_CAPACITY && t.every(c => c === t[0]);
+        if (isNowDone && !doneBefore[tIdx]) {
+            var colHex = COLORS[t[0]] || '#4ade80';
             setTimeout(() => spawnTubeConfetti(tIdx, colHex), 180);
         }
     });
@@ -1386,6 +1385,23 @@ renderBoard = function() {
             b.style.height = isTall ? '28px' : '29px';
         });
     }
+};
+
+// Железобетонная страховка срабатывания победы после любого хода
+var prevClickWinGuard = onTubeClick;
+onTubeClick = function(idx) {
+    prevClickWinGuard(idx);
+    setTimeout(() => {
+        var winModal = document.getElementById('win-modal');
+        if (winModal && winModal.style.display === 'flex') return;
+
+        var allSolved = tubes.length > 0 && tubes.every(t =>
+            t.length === 0 || (t.length === TUBE_CAPACITY && t.every(c => c === t[0]))
+        );
+        if (allSolved && typeof checkWin === 'function') {
+            checkWin();
+        }
+    }, 260);
 };
 
 
