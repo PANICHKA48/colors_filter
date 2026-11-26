@@ -301,13 +301,23 @@ function shareGameWithFriends(withBonus) {
                 fsBtn.textContent = '⛶';
                 fsBtn.onclick = () => {
                     if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(() => {});
+                        document.documentElement.requestFullscreen().then(() => {
+                            const scale = Math.min(window.innerWidth / 460, window.innerHeight / 820, 1.45);
+                            document.body.style.zoom = scale.toFixed(2);
+                        }).catch(() => {});
                         fsBtn.textContent = '🗗';
                     } else {
+                        document.body.style.zoom = '1';
                         document.exitFullscreen().catch(() => {});
                         fsBtn.textContent = '⛶';
                     }
                 };
+                document.addEventListener('fullscreenchange', () => {
+                    if (!document.fullscreenElement) {
+                        document.body.style.zoom = '1';
+                        fsBtn.textContent = '⛶';
+                    }
+                });
                 topLeft.appendChild(fsBtn);
             }
             const winModal = document.getElementById('win-modal');
