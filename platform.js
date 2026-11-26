@@ -280,3 +280,36 @@ function shareGameWithFriends(withBonus) {
         }
     }, 300);
 })();
+
+(function setupMobileModerationCompliance() {
+    // 1. Обязательное отключение звука при сворачивании вкладки или блокировке экрана телефона
+    document.addEventListener('visibilitychange', () => {
+        if (typeof audioCtx !== 'undefined' && audioCtx) {
+            if (document.hidden) {
+                audioCtx.suspend().catch(() => {});
+            } else if (typeof state !== 'undefined' && state.sound !== false) {
+                audioCtx.resume().catch(() => {});
+            }
+        }
+    });
+
+    window.addEventListener('pagehide', () => {
+        if (typeof audioCtx !== 'undefined' && audioCtx) {
+            audioCtx.suspend().catch(() => {});
+        }
+    });
+
+    // 2. Отступ сверху в мобильном клиенте ВК, чтобы системная кнопка закрытия (••• | ✕) не перекрывала иконки
+    const applyVkSafeTop = () => {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (PlatformSDK.type === 'vk' && isMobile) {
+            document.body.style.paddingTop = 'max(env(safe-area-inset-top, 0px), 44px)';
+        }
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyVkSafeTop);
+    } else {
+        applyVkSafeTop();
+    }
+})();
