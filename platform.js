@@ -417,3 +417,22 @@ function shareGameWithFriends(withBonus) {
         if (typeof audioCtx !== 'undefined' && audioCtx) audioCtx.suspend().catch(() => {});
     });
 })();
+
+    document.addEventListener('focusin', (e) => {
+        if (e.target && e.target.tagName === 'INPUT') {
+            const overlay = e.target.closest('.modal-overlay');
+            if (overlay) {
+                overlay.style.alignItems = 'flex-start';
+                overlay.style.paddingTop = '14px';
+            }
+        }
+    });
+    document.addEventListener('focusout', (e) => {
+        if (e.target && e.target.tagName === 'INPUT') {
+            const overlay = e.target.closest('.modal-overlay');
+            if (overlay) {
+                overlay.style.alignItems = '';
+                overlay.style.paddingTop = '';
+            }
+        }
+    });
