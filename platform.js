@@ -1,8 +1,136 @@
+const SUPABASE_URL = 'https://vnrwplmznprluqgafcke.supabase.co/rest/v1/';
+const SUPABASE_KEY = 'sb_publishable_-PTgDlvlE2S49OHWxjK_lw_8HIcBZ-E';
+const GAME_ID = 'neon_sort';
+
 window.PlatformSDK = {
     type: 'web',
     vkUserId: null,
+    vkPhoto: '',
     lastShareBonusDay: localStorage.getItem('vk_share_bonus_day') || ''
 };
+
+function syncLeaderToSupabase() {
+    if (!SUPABASE_URL.startsWith('http') || typeof state === 'undefined') return;
+
+    const uid = PlatformSDK.vkUserId
+        ? 'vk_' + PlatformSDK.vkUserId
+        : (localStorage.getItem('guest_uid') || (() => {
+            const id = 'web_' + Math.random().toString(36).slice(2, 10);
+            localStorage.setItem('guest_uid', id);
+            return id;
+        })());
+
+    const pName = (typeof extra !== 'undefined' && extra.customName) ? extra.customName : 'Игрок';
+    const pScore = state.bestScore || state.level || 1;
+    const pRank = (typeof extra !== 'undefined' && extra.accLvl) ? extra.accLvl : 1;
+    const pCoins = state.coins || 0;
+
+    fetch(SUPABASE_URL + '/rest/v1/leaders?on_conflict=game_id,user_id', {
+        method: 'POST',
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+            game_id: GAME_ID,
+            user_id: uid,
+            name: pName,
+            photo: PlatformSDK.vkPhoto || '',
+            score: Math.floor(pScore),
+            rank: Math.floor(pRank),
+            coins: Math.floor(pCoins),
+            updated_at: new Date().toISOString()
+        })
+    }).catch(() => {});
+}
+
+async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
+    const modal = document.getElementById('lb-modal');
+    const listEl = document.getElementById('lb-list') || document.querySelector('#lb-modal .shop-list, #lb-modal .lb-content');
+    if (!modal || !listEl) return;
+
+    modal.style.display = 'flex';
+    listEl.innerHTML = '';
+
+    const tabsRow = document.createElement('div');
+    tabsRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;';
+    [
+        { key: 'score', label: '🏆 Рекорд' },
+        { key: 'rank',  label: '⭐ Ранг' },
+        { key: 'coins', label: '💰 Баланс' }
+    ].forEach(t => {
+        const b = document.createElement('button');
+        b.className = 'tab-btn' + (sortBy === t.key ? ' active' : '');
+        b.textContent = t.label;
+        b.onclick = () => openGlobalSupabaseLeaderboard(t.key);
+        tabsRow.appendChild(b);
+    });
+    listEl.appendChild(tabsRow);
+
+    const statusDiv = document.createElement('div');
+    statusDiv.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;';
+    statusDiv.textContent = '⏳ Загрузка мирового рейтинга...';
+    listEl.appendChild(statusDiv);
+
+    try {
+        const res = await fetch(
+            SUPABASE_URL + '/rest/v1/leaders?game_id=eq.' + GAME_ID + '&order=' + sortBy + '.desc&limit=50',
+            { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+        );
+        const rows = await res.json();
+        statusDiv.remove();
+
+        if (!Array.isArray(rows) || rows.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;';
+            empty.textContent = 'Пока нет записей. Пройди уровень, чтобы стать первым!';
+            listEl.appendChild(empty);
+            return;
+        }
+
+        const myUid = PlatformSDK.vkUserId ? 'vk_' + PlatformSDK.vkUserId : localStorage.getItem('guest_uid');
+        rows.forEach((r, idx) => {
+            const isMe = r.user_id === myUid;
+            const rowEl = document.createElement('div');
+            rowEl.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px;margin-bottom:6px;border-radius:10px;' +
+                'background:' + (isMe ? 'rgba(56,189,248,0.18)' : 'rgba(255,255,255,0.04)') + ';' +
+                'border:1px solid ' + (isMe ? '#38bdf8' : 'rgba(255,255,255,0.08)') + ';';
+
+            const left = document.createElement('div');
+            left.style.cssText = 'display:flex;align-items:center;gap:8px;min-width:0;';
+
+            const medal = document.createElement('span');
+            medal.style.cssText = 'font-weight:900;min-width:26px;color:#fbbf24;';
+            medal.textContent = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + (idx + 1)));
+            left.appendChild(medal);
+
+            if (r.photo) {
+                const img = document.createElement('img');
+                img.src = r.photo;
+                img.style.cssText = 'width:28px;height:28px;border-radius:50%;object-fit:cover;';
+                left.appendChild(img);
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.style.cssText = 'font-weight:700;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px;';
+            nameSpan.textContent = (r.name || 'Игрок') + (isMe ? ' (Вы)' : '');
+            left.appendChild(nameSpan);
+
+            const valSpan = document.createElement('span');
+            valSpan.style.cssText = 'font-weight:900;font-size:13px;color:#38bdf8;white-space:nowrap;';
+            valSpan.textContent = sortBy === 'rank' ? '⭐ ' + r.rank : (sortBy === 'coins' ? '$' + Number(r.coins).toLocaleString('ru-RU') : '🚩 ' + r.score);
+
+            rowEl.appendChild(left);
+            rowEl.appendChild(valSpan);
+            listEl.appendChild(rowEl);
+        });
+    } catch (e) {
+        statusDiv.style.color = '#f87171';
+        statusDiv.textContent = 'Ошибка сети при загрузке рейтинга';
+    }
+}
 
 (function initUniversalPlatform() {
     const isVk = location.search.includes('vk_') || location.hash.includes('vk_') || (document.referrer && document.referrer.includes('vk.'));
@@ -13,13 +141,14 @@ window.PlatformSDK = {
         if (typeof vkBridge !== 'undefined') {
             vkBridge.send('VKWebAppInit').catch(() => {});
 
-            // 1. Получаем имя игрока и загружаем облачное сохранение аккаунта ВК (ПК <-> Телефон)
             vkBridge.send('VKWebAppGetUserInfo').then(u => {
                 PlatformSDK.vkUserId = u.id;
+                PlatformSDK.vkPhoto = u.photo_100 || u.photo_50 || '';
                 if (u.first_name && typeof extra !== 'undefined' && !extra.customName) {
                     extra.customName = (u.first_name + ' ' + (u.last_name || '')).trim().slice(0, 16);
                     if (typeof saveExtra === 'function') saveExtra();
                 }
+                syncLeaderToSupabase();
             }).catch(() => {});
 
             vkBridge.send('VKWebAppStorageGet', { keys: ['vk_save_state', 'vk_save_extra', 'vk_save_prog'] })
@@ -50,22 +179,6 @@ window.PlatformSDK = {
                     }
                 }).catch(() => {});
 
-            // 2. Дублируем каждое локальное сохранение в облако ВКонтакте
-            const origSaveProgress = window.saveProgress;
-            window.saveProgress = function() {
-                if (typeof origSaveProgress === 'function') origSaveProgress();
-                if (typeof vkBridge !== 'undefined' && typeof state !== 'undefined') {
-                    vkBridge.send('VKWebAppStorageSet', { key: 'vk_save_state', value: JSON.stringify(state) }).catch(() => {});
-                    if (typeof extra !== 'undefined') {
-                        vkBridge.send('VKWebAppStorageSet', { key: 'vk_save_extra', value: JSON.stringify(extra) }).catch(() => {});
-                    }
-                    if (typeof prog !== 'undefined') {
-                        vkBridge.send('VKWebAppStorageSet', { key: 'vk_save_prog', value: JSON.stringify(prog) }).catch(() => {});
-                    }
-                }
-            };
-
-            // 3. Реклама и лидерборд ВК
             window.showInterstitial = function() {
                 isPaused = true;
                 vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' }).finally(() => { isPaused = false; });
@@ -77,25 +190,43 @@ window.PlatformSDK = {
                     .then(res => { isPaused = false; if (res && res.result) onSuccess(); })
                     .catch(() => { isPaused = false; });
             };
-
-            const origOpenLb = window.openLeaderboard;
-            window.openLeaderboard = function() {
-                const val = typeof state !== 'undefined' ? (state.level || 1) : 1;
-                vkBridge.send('VKWebAppShowLeaderBoardBox', { user_result: Math.floor(val), global: 1 })
-                    .catch(() => { if (typeof origOpenLb === 'function') origOpenLb(); });
-            };
         }
+
+        window.openLeaderboard = function() {
+            syncLeaderToSupabase();
+            openGlobalSupabaseLeaderboard('score');
+        };
     }
 
-    // 4. Добавляем кнопки «👥 Поделиться» в шапку и в окно победы
+    const origSaveProgress = window.saveProgress;
+    window.saveProgress = function() {
+        if (typeof origSaveProgress === 'function') origSaveProgress();
+        syncLeaderToSupabase();
+
+        if (PlatformSDK.type === 'vk' && typeof vkBridge !== 'undefined' && typeof state !== 'undefined') {
+            vkBridge.send('VKWebAppStorageSet', { key: 'vk_save_state', value: JSON.stringify(state) }).catch(() => {});
+            if (typeof extra !== 'undefined') {
+                vkBridge.send('VKWebAppStorageSet', { key: 'vk_save_extra', value: JSON.stringify(extra) }).catch(() => {});
+            }
+            if (typeof prog !== 'undefined') {
+                vkBridge.send('VKWebAppStorageSet', { key: 'vk_save_prog', value: JSON.stringify(prog) }).catch(() => {});
+            }
+        }
+    };
+
     function injectVkShareButtons() {
         if (PlatformSDK.type !== 'vk') return;
 
         const topLeft = document.querySelector('.top-bar .btn-group') || document.querySelector('.top-bar');
         if (topLeft && !document.getElementById('vk-share-top-btn')) {
-            topLeft.insertAdjacentHTML('beforeend',
-                '<button class="icon-btn" id="vk-share-top-btn" onclick="shareGameWithFriends(true)" title="Поделиться с друзьями" style="border-color:#38bdf8;">👥</button>'
-            );
+            const topBtn = document.createElement('button');
+            topBtn.id = 'vk-share-top-btn';
+            topBtn.className = 'icon-btn';
+            topBtn.textContent = '👥';
+            topBtn.title = 'Поделиться с друзьями';
+            topBtn.style.borderColor = '#38bdf8';
+            topBtn.onclick = () => shareGameWithFriends(true);
+            topLeft.appendChild(topBtn);
         }
 
         const targetModal = document.getElementById('win-modal') || document.getElementById('gameover-modal');
@@ -105,7 +236,7 @@ window.PlatformSDK = {
             shareBtn.id = 'vk-share-modal-btn';
             shareBtn.className = 'action-btn modal-btn';
             shareBtn.style.cssText = 'background:linear-gradient(135deg,#2563eb,#7c3aed);margin-top:8px;width:100%;';
-            shareBtn.innerHTML = '👥 Поделиться с друзьями (+$150)';
+            shareBtn.textContent = '👥 Поделиться с друзьями (+$150)';
             shareBtn.onclick = () => shareGameWithFriends(true);
 
             const lastBtn = box.querySelector('button:last-of-type');
@@ -123,9 +254,8 @@ window.PlatformSDK = {
 
 function shareGameWithFriends(withBonus) {
     if (typeof vkBridge === 'undefined') return;
-    const appUrl = document.referrer && document.referrer.includes('://vk.com')
-        ? document.referrer.split('?')[0]
-        : 'https://://vk.com' + (new URLSearchParams(location.search).get('vk_app_id') || '');
+    const appId = new URLSearchParams(location.search).get('vk_app_id') || '';
+    const appUrl = appId ? 'https://vk.com' + appId : location.href.split('?')[0];
 
     vkBridge.send('VKWebAppShare', { link: appUrl })
         .then(() => {
