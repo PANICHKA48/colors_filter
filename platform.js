@@ -130,16 +130,14 @@ function shareGameWithFriends(withBonus) {
             state.coins += 150;
             if (typeof saveProgress === 'function') saveProgress();
             if (typeof renderBoard === 'function') renderBoard();
-            if (typeof showFloatText === 'function') showFloatText('👥 Спасибо за приглашение! +$150!', '#38bdf8');
+            if (typeof showFloatText === 'function') showFloatText('👥 Спасибо за репост! +$150!', '#38bdf8');
             if (typeof playTone === 'function') playTone(820, 0.25);
         }
     };
     if (typeof vkBridge !== 'undefined') {
-        vkBridge.send('VKWebAppShowInviteBox', {}).then(rewardOnce).catch(() => {
-            vkBridge.send('VKWebAppShare', { link: appUrl }).then(rewardOnce).catch(() => {});
-        });
+        vkBridge.send('VKWebAppShare', { link: appUrl }).then(rewardOnce).catch(() => {});
     } else if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ handler: 'VKWebAppShowInviteBox', params: {}, type: 'vk-connect' }, '*');
+        window.parent.postMessage({ handler: 'VKWebAppShare', params: { link: appUrl }, type: 'vk-connect' }, '*');
         rewardOnce();
     }
 }
