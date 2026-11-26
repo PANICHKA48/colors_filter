@@ -290,15 +290,25 @@ function shareGameWithFriends(withBonus) {
     window.addEventListener('load', () => {
         if (PlatformSDK.type === 'vk') {
             const topLeft = document.querySelector('.top-bar .btn-group');
-            if (topLeft && !document.getElementById('vk-share-top-btn')) {
-                const topBtn = document.createElement('button');
-                topBtn.className = 'icon-btn';
-                topBtn.id = 'vk-share-top-btn';
-                topBtn.title = 'Поделиться с друзьями';
-                topBtn.style.borderColor = '#38bdf8';
-                topBtn.textContent = '👥';
-                topBtn.onclick = () => shareGameWithFriends(true);
-                topLeft.appendChild(topBtn);
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+            // Добавляем кнопку полноэкранного режима только на ПК
+            if (topLeft && !isMobile && !document.getElementById('fullscreen-btn')) {
+                const fsBtn = document.createElement('button');
+                fsBtn.className = 'icon-btn';
+                fsBtn.id = 'fullscreen-btn';
+                fsBtn.title = 'На весь экран';
+                fsBtn.textContent = '⛶';
+                fsBtn.onclick = () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                        fsBtn.textContent = '🗗';
+                    } else {
+                        document.exitFullscreen().catch(() => {});
+                        fsBtn.textContent = '⛶';
+                    }
+                };
+                topLeft.appendChild(fsBtn);
             }
             const winModal = document.getElementById('win-modal');
             if (winModal && !document.getElementById('vk-share-modal-btn')) {
