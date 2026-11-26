@@ -300,20 +300,26 @@ function shareGameWithFriends(withBonus) {
                 fsBtn.title = 'На весь экран';
                 fsBtn.textContent = '⛶';
                 const applyFullscreenScale = () => {
-                    const wrap = document.getElementById('game-wrapper') || document.querySelector('.app-container') || document.body;
+                    let fsStyle = document.getElementById('vk-pc-fullscreen-style');
                     if (document.fullscreenElement) {
-                        document.querySelectorAll('body > div').forEach(el => {
-                            if (el.offsetHeight > 300) {
-                                el.style.maxWidth = '820px';
-                                el.style.width = '90vw';
-                            }
-                        });
+                        if (!fsStyle) {
+                            fsStyle = document.createElement('style');
+                            fsStyle.id = 'vk-pc-fullscreen-style';
+                            fsStyle.textContent = `
+                                body > div, .app, #app, .game-container, .wrapper, main {
+                                    max-width: 960px !important;
+                                    width: 92vw !important;
+                                }
+                                .tubes-container, #board, .board {
+                                    transform: scale(1.28) !important;
+                                    transform-origin: center center !important;
+                                }
+                            `;
+                            document.head.appendChild(fsStyle);
+                        }
                         fsBtn.textContent = '🗗';
                     } else {
-                        document.querySelectorAll('body > div').forEach(el => {
-                            el.style.maxWidth = '';
-                            el.style.width = '';
-                        });
+                        if (fsStyle) fsStyle.remove();
                         fsBtn.textContent = '⛶';
                     }
                 };
