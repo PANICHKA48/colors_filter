@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сортировка: Неоновые Колбы</title>
     <link rel="stylesheet" href="style.css">
-    <script src="/sdk.js"></script>
+    <script src="https://unpkg.com"></script>
+    <script>
+    if (location.search.includes('vk_app_id') && typeof vkBridge !== 'undefined') {
+        vkBridge.send('VKWebAppInit');
+    } else if (location.hostname.includes('yandex')) {
+        var s = document.createElement('script');
+        s.src = '/sdk.js';
+        document.head.appendChild(s);
+    }
+    </script>
 </head>
 <body>
 
@@ -101,7 +110,6 @@
 <script src="game.js"></script>
 <script src="features.js"></script>
 <script src="progression.js"></script>
-<script src="https://unpkg.com"></script>
 <script src="platform.js"></script>
 </body>
 </html>
