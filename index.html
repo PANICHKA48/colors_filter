@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сортировка: Неоновые Колбы</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com"></script>
+    <script>
+        if (typeof vkBridge !== 'undefined') {
+            vkBridge.send('VKWebAppInit').catch(() => {});
+        }
+    </script>
     <script>
         // Мгновенно снимаем спиннер загрузки ВКонтакте напрямую через postMessage (работает даже без CDN!)
         try {
