@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Сортировка: Неоновые Колбы</title>
     <link rel="stylesheet" href="style.css">
-        <script>
+    
+    <script>
         try {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({ handler: 'VKWebAppInit', params: {}, type: 'vk-connect' }, '*');
             }
         } catch (e) {}
-    </script>
-        <script>
         (function() {
             var s = document.createElement('script');
-            s.src = 'https://unpkg.com' + '@vkontakte/vk-bridge/dist/browser.min.js';
+            s.async = true;
+            s.src = 'https://jsdelivr.net' + 'npm/@vkontakte/vk-bridge@2.15.11/dist/browser.min.js'
             s.onload = function() {
                 if (typeof vkBridge !== 'undefined') vkBridge.send('VKWebAppInit').catch(() => {});
             };
