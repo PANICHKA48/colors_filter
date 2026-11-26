@@ -739,17 +739,15 @@ input, textarea {
     scroll-margin-top: 20px;
 }
 
-/* Растягиваем игру в полноэкранном режиме на ПК */
-:fullscreen .app,
-:fullscreen .container,
-:fullscreen #game-container,
-:fullscreen main {
-    max-width: 900px !important;
-    width: 95vw !important;
+:fullscreen body > div,
+:-webkit-full-screen body > div {
+    max-width: 920px !important;
+    width: 94vw !important;
+    height: 96vh !important;
 }
 
-:fullscreen .board,
-:fullscreen .tubes-container {
-    transform: scale(1.22);
+:fullscreen #board,
+:-webkit-full-screen #board {
+    transform: scale(1.25);
     transform-origin: center center;
 }
