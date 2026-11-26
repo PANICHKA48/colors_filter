@@ -63,7 +63,7 @@ function restoreProgressFromSupabase() {
     .then(r => r.json())
     .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
-        const row = rows;
+        const [row] = rows;
         let changed = false;
 
         if (row.save_data) {
@@ -73,7 +73,7 @@ function restoreProgressFromSupabase() {
                     Object.assign(state, parsed.state);
                     changed = true;
                 }
-                if (parsed.extra && typeof extra !== 'undefined' && ((parsed.extra.accLvl || 1) >= (extra.accLvl || 1))) {
+                if (parsed.extra && typeof extra !== 'undefined' && (parsed.extra.accLvl || 1) > (extra.accLvl || 1)) {
                     Object.assign(extra, parsed.extra);
                     changed = true;
                 }
@@ -84,11 +84,18 @@ function restoreProgressFromSupabase() {
             } catch (e) {}
         }
 
-        if (!changed && (row.score || 1) > (state.level || 1)) {
+        // Страховка на случай, если save_data ещё не записался, но в колонке rank уже 36
+        if (typeof extra !== 'undefined' && (row.rank || 1) > (extra.accLvl || 1)) {
+            extra.accLvl = row.rank;
+            changed = true;
+        }
+        if ((row.score || 1) > (state.level || 1)) {
             state.level = row.score;
             state.bestScore = Math.max(state.bestScore || 1, row.score);
-            state.coins = Math.max(state.coins || 0, row.coins || 0);
-            if (typeof extra !== 'undefined') extra.accLvl = Math.max(extra.accLvl || 1, row.rank || 1);
+            changed = true;
+        }
+        if ((row.coins || 0) > (state.coins || 0)) {
+            state.coins = row.coins;
             changed = true;
         }
 
