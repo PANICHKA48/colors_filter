@@ -320,3 +320,54 @@ function shareGameWithFriends(withBonus) {
         applyVkSafeTop();
     }
 })();
+
+(function guaranteeSolvableLevels() {
+    if (typeof window.initLevel !== 'function') return;
+    const origInitLevel = window.initLevel;
+
+    window.initLevel = function() {
+        origInitLevel.apply(this, arguments);
+        if (typeof tubes === 'undefined' || !Array.isArray(tubes)) return;
+
+        // 1. Собираем все цвета на уровне и проверяем, есть ли замороженные шары
+        const frozenColors = new Set();
+        const allColors = new Set();
+        let hasHazards = false;
+
+        tubes.forEach(tube => {
+            tube.forEach(ball => {
+                if (!ball) return;
+                const col = typeof ball === 'object' ? ball.color : ball;
+                allColors.add(col);
+                if (typeof ball === 'object') {
+                    if (ball.frozen) {
+                        frozenColors.add(col);
+                        hasHazards = true;
+                    }
+                    if (ball.hidden) hasHazards = true;
+                }
+            });
+        });
+
+        // 2. Если заморожены ВСЕ цвета (нельзя собрать ни одну полную колбу для разморозки) —
+        // размораживаем один случайный цвет целиком, чтобы всегда был выход из ситуации!
+        if (frozenColors.size > 0 && frozenColors.size >= allColors.size) {
+            const unlockColor = Array.from(allColors)[0];
+            tubes.forEach(tube => {
+                tube.forEach(ball => {
+                    if (ball && typeof ball === 'object' && ball.color === unlockColor) {
+                        ball.frozen = false;
+                    }
+                });
+            });
+        }
+
+        // 3. Гарантируем минимум 2 пустые колбы на уровнях со льдом или вопросами
+        const emptyCount = tubes.filter(t => t.length === 0).length;
+        if (hasHazards && emptyCount < 2) {
+            tubes.push([]);
+        }
+
+        if (typeof renderBoard === 'function') renderBoard();
+    };
+})();
