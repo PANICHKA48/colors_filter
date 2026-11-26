@@ -219,11 +219,10 @@ function shareGameWithFriends(withBonus) {
                 if (typeof saveExtra === 'function') saveExtra();
             }
             if (typeof saveProgress === 'function') saveProgress();
-            if (typeof generateLevel === 'function') generateLevel(state.level);
             if (typeof updateExpBar === 'function') updateExpBar();
             if (typeof refreshTitleBadge === 'function') refreshTitleBadge();
             if (typeof renderBoard === 'function') renderBoard();
-            if (typeof showFloatText === 'function') showFloatText('👥 Репост: +$10 000 и +5 ур.!', '#38bdf8');
+            if (typeof showFloatText === 'function') showFloatText('👥 Репост: +$10 000 и +5 рангов!', '#38bdf8');
             if (typeof playTone === 'function') playTone(820, 0.25);
         }
     };
