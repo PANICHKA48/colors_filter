@@ -55,7 +55,7 @@ function restoreProgressFromSupabase() {
     .then(r => r.json())
     .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
-        const row = rows;
+        const row = rows[0];
         let changed = false;
 
         if ((row.score || 1) > (state.level || 1)) {
@@ -117,7 +117,7 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
 
     try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 3200);
+        const timer = setTimeout(() => controller.abort(), 7000);
         const res = await fetch(SUPABASE_URL + '/rest/v1/leaders?game_id=eq.' + GAME_ID + '&order=' + sortBy + '.desc&limit=50', {
             headers: getSupabaseHeaders(), signal: controller.signal
         });
@@ -401,3 +401,13 @@ function shareGameWithFriends(withBonus) {
         if (typeof renderBoard === 'function') renderBoard();
     };
 })();
+
+if (typeof window.watchAd === 'function') {
+    window.watchAd = function(onReward) {
+        if (typeof window.showRewarded === 'function') {
+            window.showRewarded(onReward);
+        } else if (typeof showFloatText === 'function') {
+            showFloatText('⏳ Реклама пока недоступна', '#94a3b8');
+        }
+    };
+}
