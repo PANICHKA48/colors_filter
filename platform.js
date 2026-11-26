@@ -34,12 +34,20 @@ function syncLeaderToSupabase() {
     const pRank = (typeof extra !== 'undefined' && extra.accLvl) ? extra.accLvl : 1;
     const pCoins = state.coins || 0;
 
+    // Упаковываем полный прогресс (титул, серия, опыт, скины, этап)
+    const fullSave = JSON.stringify({
+        state: state,
+        extra: typeof extra !== 'undefined' ? extra : {},
+        prog: typeof prog !== 'undefined' ? prog : {}
+    });
+
     fetch(SUPABASE_URL + '/rest/v1/leaders?on_conflict=game_id,user_id', {
         method: 'POST',
         headers: getSupabaseHeaders({ 'Prefer': 'resolution=merge-duplicates' }),
         body: JSON.stringify({
             game_id: GAME_ID, user_id: uid, name: pName, photo: PlatformSDK.vkPhoto || '',
             score: Math.floor(pScore), rank: Math.floor(pRank), coins: Math.floor(pCoins),
+            save_data: fullSave,
             updated_at: new Date().toISOString()
         })
     }).catch(() => {});
@@ -55,33 +63,40 @@ function restoreProgressFromSupabase() {
     .then(r => r.json())
     .then(rows => {
         if (!Array.isArray(rows) || rows.length === 0) return;
-        const row = rows[0];
+        const row = rows;
         let changed = false;
 
-        if ((row.score || 1) > (state.level || 1)) {
+        if (row.save_data) {
+            try {
+                const parsed = JSON.parse(row.save_data);
+                if (parsed.state && (parsed.state.level || 1) >= (state.level || 1)) {
+                    Object.assign(state, parsed.state);
+                    changed = true;
+                }
+                if (parsed.extra && typeof extra !== 'undefined' && ((parsed.extra.accLvl || 1) >= (extra.accLvl || 1))) {
+                    Object.assign(extra, parsed.extra);
+                    changed = true;
+                }
+                if (parsed.prog && typeof prog !== 'undefined') {
+                    Object.assign(prog, parsed.prog);
+                    changed = true;
+                }
+            } catch (e) {}
+        }
+
+        if (!changed && (row.score || 1) > (state.level || 1)) {
             state.level = row.score;
             state.bestScore = Math.max(state.bestScore || 1, row.score);
+            state.coins = Math.max(state.coins || 0, row.coins || 0);
+            if (typeof extra !== 'undefined') extra.accLvl = Math.max(extra.accLvl || 1, row.rank || 1);
             changed = true;
-        }
-        if ((row.coins || 0) > (state.coins || 0)) {
-            state.coins = row.coins;
-            changed = true;
-        }
-        if (typeof extra !== 'undefined') {
-            if ((row.rank || 1) > (extra.accLvl || 1)) {
-                extra.accLvl = row.rank;
-                changed = true;
-            }
-            if (row.name && row.name !== 'Игрок' && !extra.customName) {
-                extra.customName = row.name;
-                changed = true;
-            }
         }
 
         if (changed) {
             if (typeof saveProgress === 'function') saveProgress();
             if (typeof saveExtra === 'function') saveExtra();
             if (typeof initLevel === 'function') initLevel();
+            if (typeof updateHeader === 'function') updateHeader();
             if (typeof renderBoard === 'function') renderBoard();
         }
     })
@@ -115,13 +130,10 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
     statusDiv.textContent = '⏳ Загрузка мирового рейтинга...';
     listEl.appendChild(statusDiv);
 
-    try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 7000);
+   try {
         const res = await fetch(SUPABASE_URL + '/rest/v1/leaders?game_id=eq.' + GAME_ID + '&order=' + sortBy + '.desc&limit=50', {
-            headers: getSupabaseHeaders(), signal: controller.signal
+            headers: getSupabaseHeaders()
         });
-        clearTimeout(timer);
         const rows = await res.json();
         statusDiv.remove();
 
@@ -212,7 +224,7 @@ function shareGameWithFriends(withBonus) {
                     extra.customName = (u.first_name + ' ' + (u.last_name || '')).trim().slice(0, 16);
                     if (typeof saveExtra === 'function') saveExtra();
                 }
-                syncLeaderToSupabase();
+                ;
             }).catch(() => {});
             vkBridge.send('VKWebAppStorageGet', { keys: ['vk_save_state', 'vk_save_extra', 'vk_save_prog'] }).then(res => {
                 if (!res || !res.keys) return;
