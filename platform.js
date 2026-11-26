@@ -324,11 +324,6 @@ function shareGameWithFriends(withBonus) {
                     }
                 };
                 document.addEventListener('fullscreenchange', applyFullscreenScale);
-                    if (!document.fullscreenElement) {
-                        document.body.style.zoom = '1';
-                        fsBtn.textContent = '⛶';
-                    }
-                });
                 topLeft.appendChild(fsBtn);
             }
             const winModal = document.getElementById('win-modal');
