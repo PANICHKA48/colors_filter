@@ -274,7 +274,7 @@ function setupVkBridgeHooks() {
 
 function shareGameWithFriends(withBonus) {
     const appId = new URLSearchParams(location.search).get('vk_app_id') || '';
-    const appUrl = appId ? 'https://vk.com' + appId : 'https://vk.com';
+    const appUrl = appId ? 'https://vk.com' + '/app' + appId : 'https://vk.com';
 
     const rewardOnce = () => {
         const today = new Date().toDateString();
@@ -289,7 +289,8 @@ function shareGameWithFriends(withBonus) {
         }
     };
 
-   if (typeof vkBridge !== 'undefined') {
+
+    if (typeof vkBridge !== 'undefined') {
         vkBridge.send('VKWebAppShowInviteBox', {})
             .then(rewardOnce)
             .catch(() => {
@@ -300,3 +301,4 @@ function shareGameWithFriends(withBonus) {
         rewardOnce();
     }
 }
+
