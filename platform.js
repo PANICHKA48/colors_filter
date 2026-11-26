@@ -213,4 +213,85 @@ function shareGameWithFriends(withBonus) {
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBtn); else addBtn();
 })();
+(function protectWinRewardsAndStreakBug() {
+    let x2UsedThisLevel = false;
+    let x2Busy = false;
+    let streakRewardLevel = -1;
 
+    // 1. Защита от повторного начисления бонуса серии на одном и том же уровне
+    if (typeof window.showFloatText === 'function') {
+        const origFloat = window.showFloatText;
+        window.showFloatText = function(text, color) {
+            if (typeof text === 'string' && text.includes('СУНДУК СЕРИИ')) {
+                const curLvl = typeof state !== 'undefined' ? state.level : 0;
+                if (streakRewardLevel === curLvl) return;
+                streakRewardLevel = curLvl;
+            }
+            return origFloat.apply(this, arguments);
+        };
+    }
+
+    // 2. Защита показа рекламы с наградой (не даёт вызывать повторно во время/после просмотра)
+    const origShowRewarded = window.showRewarded;
+    window.showRewarded = function(onSuccess) {
+        if (x2Busy || x2UsedThisLevel) return;
+        x2Busy = true;
+
+        const wrappedSuccess = function() {
+            x2Busy = false;
+            x2UsedThisLevel = true;
+            if (typeof onSuccess === 'function') onSuccess();
+        };
+
+        if (typeof origShowRewarded === 'function') {
+            origShowRewarded(wrappedSuccess);
+            setTimeout(() => { x2Busy = false; }, 2500);
+        } else {
+            x2Busy = false;
+        }
+    };
+
+    // 3. Жесткая блокировка кнопки «Забрать x2 (Реклама)» в окне победы
+    setInterval(() => {
+        const winModal = document.getElementById('win-modal');
+        if (!winModal || winModal.style.display === 'none' || winModal.style.display === '') {
+            x2UsedThisLevel = false;
+            x2Busy = false;
+            return;
+        }
+
+        const x2Btn = Array.from(winModal.querySelectorAll('button')).find(
+            b => b.textContent.includes('Забрать x2') || b.textContent.includes('x2')
+        );
+
+        if (x2Btn && !x2Btn.dataset.hardGuarded) {
+            x2Btn.dataset.hardGuarded = '1';
+            const origClick = x2Btn.onclick;
+
+            x2Btn.onclick = function(e) {
+                if (x2UsedThisLevel || x2Busy) return;
+                x2Busy = true;
+                x2Btn.disabled = true;
+                x2Btn.style.opacity = '0.5';
+                x2Btn.style.pointerEvents = 'none';
+
+                const prevCoins = typeof state !== 'undefined' ? state.coins : 0;
+                if (typeof origClick === 'function') origClick.call(this, e);
+
+                setTimeout(() => {
+                    const nowCoins = typeof state !== 'undefined' ? state.coins : 0;
+                    x2Busy = false;
+                    if (nowCoins > prevCoins) {
+                        x2UsedThisLevel = true;
+                        x2Btn.textContent = '✅ Награда x2 получена';
+                    } else {
+                        // Если рекламу закрыли досрочно — разрешаем 1 повторную попытку, но не бесконечно
+                        x2Btn.disabled = false;
+                        x2Btn.style.opacity = '1';
+                        x2Btn.style.pointerEvents = 'auto';
+                    }
+                }, 500);
+            };
+        }
+    }, 250);
+})();
