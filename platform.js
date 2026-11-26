@@ -326,26 +326,23 @@ function shareGameWithFriends(withBonus) {
         if (typeof window.generateLevel === 'function') {
             const origGen = window.generateLevel;
             window.generateLevel = function(lvl) {
-                // Пропорционально масштабируем входной уровень в шкалу сложности 1..60 так,
-                // чтобы пик сложности (11 цветов / 13 колб) наступал ровно на 100-м этапе
                 const scaledLvl = lvl <= 1 ? 1 : Math.min(60, Math.max(1, Math.round(lvl * 0.6)));
                 origGen.call(this, scaledLvl);
-
-                // Возвращаем отображение реального номера этапа (lvl) на экране
                 if (typeof state !== 'undefined') state.level = lvl;
-                const lvlBadge = document.getElementById('level-val') || document.getElementById('lvl-num');
-                if (lvlBadge) lvlBadge.textContent = lvl;
-
-                // Гарантируем минимум 2 пустые колбы при льде или тайных шарах (защита от тупиков)
+        
+                // Синхронизируем тайные шары и лёд с реальным номером этапа (lvl)
                 if (typeof tubes !== 'undefined' && Array.isArray(tubes)) {
+                    if (typeof isMysteryStage === 'function' && isMysteryStage(lvl) && typeof revealedMask !== 'undefined') {
+                        revealedMask = tubes.map(t => t.map((_, idx) => idx === t.length - 1));
+                    }
                     const hasFrozen = typeof frozenTubes !== 'undefined' && frozenTubes.length > 0;
                     const hasMystery = typeof isMysteryStage === 'function' && isMysteryStage(lvl);
                     const emptyCount = tubes.filter(t => t.length === 0).length;
                     if ((hasFrozen || hasMystery) && emptyCount < 2) {
                         tubes.push([]);
                         if (typeof revealedMask !== 'undefined') revealedMask.push([true, true, true, true]);
-                        if (typeof renderBoard === 'function') renderBoard();
                     }
+                    if (typeof renderBoard === 'function') renderBoard();
                 }
             };
         }
