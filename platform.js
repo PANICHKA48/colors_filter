@@ -83,10 +83,14 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
     listEl.appendChild(statusDiv);
 
     try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3200); // Ждём максимум 3.2 сек
+
         const res = await fetch(
             SUPABASE_URL + '/rest/v1/leaders?game_id=eq.' + GAME_ID + '&order=' + sortBy + '.desc&limit=50',
-            { headers: getSupabaseHeaders() }
+            { headers: getSupabaseHeaders(), signal: controller.signal }
         );
+        clearTimeout(timer);
         const rows = await res.json();
         statusDiv.remove();
 
@@ -135,10 +139,14 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
             listEl.appendChild(rowEl);
         });
     } catch (e) {
-        statusDiv.style.color = '#f87171';
-        statusDiv.textContent = 'Ошибка сети при загрузке рейтинга';
+        // Если провайдер игрока в РФ замедляет supabase.co — плавно показываем встроенный рейтинг без красной ошибки!
+        if (typeof renderLeaderboardList === 'function') {
+            renderLeaderboardList(sortBy === 'score' ? 'level' : sortBy);
+        } else {
+            statusDiv.style.color = '#94a3b8';
+            statusDiv.textContent = 'Локальный режим рейтинга активен';
+        }
     }
-}
 
 function setupVkBridgeHooks() {
     if (typeof vkBridge === 'undefined' || PlatformSDK.vkHooked) return;
