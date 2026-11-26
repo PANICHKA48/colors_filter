@@ -299,20 +299,31 @@ function shareGameWithFriends(withBonus) {
                 fsBtn.id = 'fullscreen-btn';
                 fsBtn.title = 'На весь экран';
                 fsBtn.textContent = '⛶';
-                fsBtn.onclick = () => {
-                    if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().then(() => {
-                            const scale = Math.min(window.innerWidth / 460, window.innerHeight / 820, 1.45);
-                            document.body.style.zoom = scale.toFixed(2);
-                        }).catch(() => {});
+                const applyFullscreenScale = () => {
+                    const container = document.querySelector('.game-container, .app, #app, body > div');
+                    if (document.fullscreenElement) {
+                        setTimeout(() => {
+                            const scale = Math.min(window.innerWidth / 440, window.innerHeight / 780, 1.5);
+                            if (container) {
+                                container.style.transform = 'scale(' + scale.toFixed(2) + ')';
+                                container.style.transformOrigin = 'center center';
+                            }
+                        }, 100);
                         fsBtn.textContent = '🗗';
                     } else {
-                        document.body.style.zoom = '1';
-                        document.exitFullscreen().catch(() => {});
+                        if (container) container.style.transform = '';
                         fsBtn.textContent = '⛶';
                     }
                 };
-                document.addEventListener('fullscreenchange', () => {
+
+                fsBtn.onclick = () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    } else {
+                        document.exitFullscreen().catch(() => {});
+                    }
+                };
+                document.addEventListener('fullscreenchange', applyFullscreenScale);
                     if (!document.fullscreenElement) {
                         document.body.style.zoom = '1';
                         fsBtn.textContent = '⛶';
@@ -365,6 +376,11 @@ function shareGameWithFriends(withBonus) {
         if (typeof window.showFloatText === 'function') {
             const origFloat = window.showFloatText;
             window.showFloatText = function(text, color) {
+                    if (typeof text === 'string' && text.includes('ЛЕДЯНЫЕ КОЛБЫ')) {
+                    const hasRealIce = document.querySelectorAll('.frozen, [data-frozen="true"]').length > 0 ||
+                        (typeof frozenTubes !== 'undefined' && frozenTubes.length > 0);
+                    if (!hasRealIce) return;
+                }
                 if (typeof text === 'string' && (text.includes('Серия x') || text.includes('СУНДУК СЕРИИ'))) {
                     if (streakShownThisWin) return;
                     streakShownThisWin = true;
