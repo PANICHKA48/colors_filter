@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://vnrwplmznprluqgafcke.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_-PTgDlvlE2S49OHWxjK_lw_8HIcBZ-E';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZucndwbG16bnBybHVxZ2FmY2tlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2OTgyNjIsImV4cCI6MjExMTI3NDI2Mn0.idFgNFunD4Z0JtchsAvEt1--wltWRLC-o7WbAuv3la0';
 const GAME_ID = 'neon_sort';
 
 window.PlatformSDK = {
@@ -12,6 +12,7 @@ window.PlatformSDK = {
 function getSupabaseHeaders(extraHeaders) {
     return Object.assign({
         'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
         'Content-Type': 'application/json'
     }, extraHeaders || {});
 }
