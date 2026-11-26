@@ -10,10 +10,11 @@ window.PlatformSDK = {
 };
 
 function getSupabaseHeaders(extraHeaders) {
-    const h = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' };
-    // Для старых JWT-ключей (eyJ...) добавляем Authorization, для новых sb_publishable_ — только apikey
-    if (SUPABASE_KEY.startsWith('eyJ')) h['Authorization'] = 'Bearer ' + SUPABASE_KEY;
-    return Object.assign(h, extraHeaders || {});
+    return Object.assign({
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json'
+    }, extraHeaders || {});
 }
 
 function syncLeaderToSupabase() {
@@ -265,7 +266,7 @@ function setupVkBridgeHooks() {
 
 function shareGameWithFriends(withBonus) {
     const appId = new URLSearchParams(location.search).get('vk_app_id') || '';
-    const appUrl = appId ? 'https://vk.com' + appId : location.href.split('?');
+    const appUrl = appId ? 'https://vk.com' + appId : 'https://vk.com';
 
     const rewardOnce = () => {
         const today = new Date().toDateString();
@@ -275,16 +276,20 @@ function shareGameWithFriends(withBonus) {
             state.coins += 150;
             if (typeof saveProgress === 'function') saveProgress();
             if (typeof renderBoard === 'function') renderBoard();
-            if (typeof showFloatText === 'function') showFloatText('👥 Спасибо за репост! +$150!', '#38bdf8');
+            if (typeof showFloatText === 'function') showFloatText('👥 Спасибо за приглашение! +$150!', '#38bdf8');
             if (typeof playTone === 'function') playTone(820, 0.25);
         }
     };
 
     if (typeof vkBridge !== 'undefined') {
-        vkBridge.send('VKWebAppShare', { link: appUrl }).then(rewardOnce).catch(() => {});
+        // Пробуем сначала нативное приглашение друзей в игру, если недоступно — репост ссылки
+        vkBridge.send('VKWebAppShowInviteBox', {})
+            .then(rewardOnce)
+            .catch(() => {
+                vkBridge.send('VKWebAppShare', { link: appUrl }).then(rewardOnce).catch(() => {});
+            });
     } else if (window.parent && window.parent !== window) {
-        // Прямой резервный вызов окна репоста ВК через postMessage, если CDN не ответил
-        window.parent.postMessage({ handler: 'VKWebAppShare', params: { link: appUrl }, type: 'vk-connect' }, '*');
+        window.parent.postMessage({ handler: 'VKWebAppShowInviteBox', params: {}, type: 'vk-connect' }, '*');
         rewardOnce();
     }
 }
