@@ -1161,7 +1161,7 @@ renderBoard = function() {
         var isTall = typeof TUBE_CAPACITY !== 'undefined' && TUBE_CAPACITY === 5;
         document.querySelectorAll('#tubes-container .tube').forEach(el => {
             el.style.width = '40px';
-            el.style.height = isTall ? '195px' : '152px';
+            el.style.height = isTall ? '172px' : '142px';
         });
         document.querySelectorAll('#tubes-container .ball').forEach(b => {
             b.style.width = isTall ? '28px' : '29px';
@@ -1375,6 +1375,7 @@ generateLevel = function(lvl) {
 
 const origRestartRestoreIce = restartLevel;
 restartLevel = function() {
+    maxMovesThisStage = 0;
     origRestartRestoreIce();
     frozenTubes = [...initialFrozenTubes];
     renderBoard();
