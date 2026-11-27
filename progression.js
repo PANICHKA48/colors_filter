@@ -303,10 +303,10 @@ const QUEST_ECONOMY = {
     l35:   { reward: 750,  exp: 700 },
     rk25:  { reward: 950,  exp: 800 },
     s9:    { reward: 1000, exp: 900 },
-    c5000: { reward: 600,  exp: 500 },
+    m1000: { reward: 600,  exp: 500 },
     l60:   { reward: 1500, exp: 1100 },
     t500:  { reward: 2000, exp: 1400 },
-    c15000:{ reward: 2000, exp: 1500 },
+    m2500: { reward: 2000, exp: 1500 },
     rk100: { reward: 4500, exp: 2500 },
     l100:  { reward: 5000, exp: 3000 }
 };
@@ -1362,3 +1362,20 @@ showFloatText = function(text, color) {
     return finalFloatGuard.apply(this, arguments);
 };
 
+// =========================================================================
+// === ВОССТАНОВЛЕНИЕ ЗАМОРОЖЕННЫХ КОЛБ ПРИ НАЖАТИИ «ЗАНОВО» (RESTART) ===
+// =========================================================================
+let initialFrozenTubes = [];
+
+const origGenSaveIce = generateLevel;
+generateLevel = function(lvl) {
+    origGenSaveIce(lvl);
+    initialFrozenTubes = Array.isArray(frozenTubes) ? [...frozenTubes] : [];
+};
+
+const origRestartRestoreIce = restartLevel;
+restartLevel = function() {
+    origRestartRestoreIce();
+    frozenTubes = [...initialFrozenTubes];
+    renderBoard();
+};

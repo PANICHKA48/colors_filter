@@ -102,7 +102,7 @@ function restoreProgressFromSupabase() {
             state.bestScore = Math.max(state.bestScore || 1, row.score);
             changed = true;
         }
-        if ((row.coins || 0) > (state.coins || 0)) {
+        if ((row.score || 1) >= (state.level || 1) && typeof row.coins === 'number' && row.coins !== state.coins) {
             state.coins = row.coins;
             changed = true;
         }

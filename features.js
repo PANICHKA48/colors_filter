@@ -601,7 +601,7 @@ const FULL_QUESTS = [
     { id: 'l15',   type: 'level', target: 15,   reward: 320,   exp: 250,  title: { ru: 'Дойди до 15-го этапа',       en: 'Reach Stage 15',          tr: '15. aşamaya ulaş' } },
     { id: 's3',    type: 'skins', target: 3,    reward: 100,   exp: 120,  title: { ru: 'Открой 3 предмета в магазине', en: 'Unlock 3 shop items',   tr: '3 mağaza öğesi aç' } },
     { id: 's6',    type: 'skins', target: 6,    reward: 250,   exp: 220,  title: { ru: 'Открой 6 предметов в магазине', en: 'Unlock 6 shop items',   tr: '6 mağaza öğesi aç' } },
-    { id: 'c5000', type: 'coins', target: 5000, reward: 350,   exp: 250,  title: { ru: 'Накопи 5000 монет на балансе', en: 'Hold 5000 coins balance', tr: '5000 altın biriktir' } },
+    { id: 'm1000', type: 'moves', target: 1000, reward: 600, exp: 500, title: { ru: 'Сделай 1 000 перекладываний', en: 'Make 1,000 moves', tr: '1.000 hamle yap' } },
     { id: 'rk5',   type: 'rank',  target: 5,    reward: 160,   exp: 150,  title: { ru: 'Достигни 5-го Ранга',        en: 'Reach Rank 5',            tr: '5. rütbeye ulaş' } },
     { id: 'rk10',  type: 'rank',  target: 10,   reward: 350,   exp: 250,  title: { ru: 'Достигни 10-го Ранга',       en: 'Reach Rank 10',           tr: '10. rütbeye ulaş' } },
     { id: 'rk15',  type: 'rank',  target: 15,   reward: 550,   exp: 350,  title: { ru: 'Достигни 15-го Ранга',       en: 'Reach Rank 15',           tr: '15. rütbeye ulaş' } },
@@ -796,7 +796,7 @@ FULL_QUESTS.push(
     { id: 't500',   type: 'tubes', target: 500,   reward: 2000,  exp: 1200, title: { ru: 'Собери 500 полных колб',         en: 'Complete 500 tubes',      tr: '500 tüp tamamla' } },
     { id: 'l35',    type: 'level', target: 35,    reward: 750,   exp: 550,  title: { ru: 'Дойди до 35-го этапа',           en: 'Reach Stage 35',          tr: '35. aşamaya ulaş' } },
     { id: 'l60',    type: 'level', target: 60,    reward: 1800,  exp: 900,  title: { ru: 'Дойди до 60-го этапа',           en: 'Reach Stage 60',          tr: '60. aşamaya ulaş' } },
-    { id: 'c15000', type: 'coins', target: 15000, reward: 1200,  exp: 600,  title: { ru: 'Накопи 15 000 монет на балансе', en: 'Hold 15,000 coins',       tr: '15.000 altın biriktir' } },
+    { id: 'm2500', type: 'moves', target: 2500, reward: 2000, exp: 1500, title: { ru: 'Сделай 2 500 перекладываний', en: 'Make 2,500 moves', tr: '2.500 hamle yap' } },
     { id: 's9',     type: 'skins', target: 9,     reward: 1000,  exp: 700,  title: { ru: 'Собери всю коллекцию (9 шт.)',   en: 'Unlock full shop (9/9)',  tr: 'Tüm mağazayı aç (9/9)' } }
 );
 

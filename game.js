@@ -449,3 +449,7 @@ window.addEventListener('load', () => {
     const sp = document.getElementById('splash');
     if (sp) sp.style.display = 'none';
 });
+
+window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModals();
+});
