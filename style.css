@@ -738,16 +738,3 @@ input, textarea {
 .modal-box input:focus {
     scroll-margin-top: 20px;
 }
-
-:fullscreen body > div,
-:-webkit-full-screen body > div {
-    max-width: 920px !important;
-    width: 94vw !important;
-    height: 96vh !important;
-}
-
-:fullscreen #board,
-:-webkit-full-screen #board {
-    transform: scale(1.25);
-    transform-origin: center center;
-}

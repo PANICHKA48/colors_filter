@@ -306,13 +306,18 @@ function shareGameWithFriends(withBonus) {
                             fsStyle = document.createElement('style');
                             fsStyle.id = 'vk-pc-fullscreen-style';
                             fsStyle.textContent = `
-                                body > div, .app, #app, .game-container, .wrapper, main {
-                                    max-width: 960px !important;
-                                    width: 92vw !important;
+                                #game-wrapper {
+                                    max-width: 680px !important;
+                                    max-height: 100vh !important;
+                                    width: min(92vw, 680px) !important;
+                                    height: 100vh !important;
+                                    padding: 16px 20px !important;
                                 }
-                                .tubes-container, #board, .board {
-                                    transform: scale(1.28) !important;
+                                #tubes-container {
+                                    transform: scale(1.22) !important;
                                     transform-origin: center center !important;
+                                    max-width: 82% !important;
+                                    margin: 0 auto !important;
                                 }
                             `;
                             document.head.appendChild(fsStyle);
@@ -323,6 +328,7 @@ function shareGameWithFriends(withBonus) {
                         fsBtn.textContent = '⛶';
                     }
                 };
+                
 
                 fsBtn.onclick = () => {
                     if (!document.fullscreenElement) {
