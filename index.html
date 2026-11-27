@@ -7,14 +7,10 @@
     <link rel="stylesheet" href="style.css?v=7">
     
     <script src="vk-bridge.js?v=7"></script>
+    <script src="vk-bridge.js?v=8"></script>
     <script>
         if (typeof vkBridge !== 'undefined') {
             vkBridge.send('VKWebAppInit').catch(() => {});
-        }
-        if (location.hostname.includes('yandex')) {
-            var s = document.createElement('script');
-            s.src = '/sdk.js';
-            document.head.appendChild(s);
         }
     </script>
 
@@ -110,10 +106,10 @@
 </div>
 
 
-<script src="game.js?v=3"></script>
-<script src="features.js?v=3"></script>
-<script src="progression.js?v=8"></script>
-<script src="platform.js?v=36"></script>
+<script src="game.js?v=5"></script>
+<script src="features.js?v=5"></script>
+<script src="progression.js?v=10"></script>
+<script src="platform.js?v=38"></script>
 
 </body>
 </html>

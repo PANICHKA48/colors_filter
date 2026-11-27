@@ -243,6 +243,19 @@ function shareGameWithFriends(withBonus) {
             if (typeof vkBridge === 'undefined' || PlatformSDK.vkHooked) return;
             PlatformSDK.vkHooked = true;
             vkBridge.send('VKWebAppInit').catch(() => {});
+                        vkBridge.subscribe(e => {
+                if (!e || !e.detail) return;
+                if (e.detail.type === 'VKWebAppViewHide') {
+                    isPaused = true;
+                    if (typeof audioCtx !== 'undefined' && audioCtx) audioCtx.suspend().catch(() => {});
+                }
+                if (e.detail.type === 'VKWebAppViewRestore') {
+                    isPaused = false;
+                    if (typeof audioCtx !== 'undefined' && audioCtx && typeof state !== 'undefined' && state.sound !== false) {
+                        audioCtx.resume().catch(() => {});
+                    }
+                }
+            });
             vkBridge.send('VKWebAppGetUserInfo').then(u => {
                 PlatformSDK.vkUserId = u.id;
                 PlatformSDK.vkPhoto = u.photo_100 || u.photo_50 || '';

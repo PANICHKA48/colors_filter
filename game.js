@@ -448,21 +448,4 @@ window.addEventListener('load', () => {
     generateLevel(state.level);
     const sp = document.getElementById('splash');
     if (sp) sp.style.display = 'none';
-
-    if (typeof YaGames !== 'undefined') {
-        YaGames.init().then(_ysdk => {
-            ysdk = _ysdk;
-            const l = ysdk.environment?.i18n?.lang;
-            if (['ru', 'en', 'tr'].includes(l)) currentLang = l;
-            applyLang();
-            if (ysdk.leaderboards) {
-                yandexLb = ysdk.leaderboards;
-                submitScoreToLb(state.level);
-            }
-            ysdk.on('game_api_pause', () => { isPaused = true; });
-            ysdk.on('game_api_resume', () => { isPaused = false; });
-            if (ysdk.features?.LoadingAPI) ysdk.features.LoadingAPI.ready();
-            if (ysdk.features?.GameplayAPI) ysdk.features.GameplayAPI.start();
-        }).catch(() => {});
-    }
 });

@@ -1249,15 +1249,13 @@ useHintAd = function() {
 // =========================================================================
 
 const DAILY_CALENDAR = [
-    { day: 1, coins: 300,   hint: 0, tube: 0, exp: 0,    label: { ru: '$300',                  en: '$300',                  tr: '$300' } },
-    { day: 2, coins: 650,   hint: 3, tube: 0, exp: 0,    label: { ru: '$650 + 💡3',            en: '$650 + 💡3',            tr: '$650 + 💡3' } },
-    { day: 3, coins: 1000,  hint: 0, tube: 0, exp: 1000, label: { ru: '$1000 + ⭐1000',        en: '$1000 + ⭐1000',        tr: '$1000 + ⭐1000' } },
-    { day: 4, coins: 2000,  hint: 0, tube: 3, exp: 0,    label: { ru: '$2000 + 🧪3',           en: '$2000 + 🧪3',           tr: '$2000 + 🧪3' } },
-    { day: 5, coins: 3500,  hint: 5, tube: 0, exp: 0,    label: { ru: '$3500 + 💡5',           en: '$3500 + 💡5',           tr: '$3500 + 💡5' } },
-    { day: 6, coins: 7500,  hint: 0, tube: 0, exp: 2500, label: { ru: '$7 500 + ⭐2500',        en: '$7,500 + ⭐2500',        tr: '$7.500 + ⭐2500' } },
-    { day: 7, coins: 10000, hint: 5, tube: 5, exp: 5000, label: { ru: '$10 000 + 💡5 + 🧪5 + ⭐5000', en: '$10,000 + 💡5 + 🧪5 + ⭐5000', tr: '$10.000 + 💡5 + 🧪5 + ⭐5000' } }
-
-
+    { day: 1, coins: 300,   hint: 0, tube: 0, exp: 0, label: { ru: '$300',             en: '$300',             tr: '$300' } },
+    { day: 2, coins: 650,   hint: 3, tube: 0, exp: 0, label: { ru: '$650 + 💡3',       en: '$650 + 💡3',       tr: '$650 + 💡3' } },
+    { day: 3, coins: 1500,  hint: 2, tube: 0, exp: 0, label: { ru: '$1 500 + 💡2',     en: '$1,500 + 💡2',     tr: '$1.500 + 💡2' } },
+    { day: 4, coins: 2500,  hint: 0, tube: 3, exp: 0, label: { ru: '$2 500 + 🧪3',     en: '$2,500 + 🧪3',     tr: '$2.500 + 🧪3' } },
+    { day: 5, coins: 4000,  hint: 5, tube: 0, exp: 0, label: { ru: '$4 000 + 💡5',     en: '$4,000 + 💡5',     tr: '$4.000 + 💡5' } },
+    { day: 6, coins: 8000,  hint: 3, tube: 3, exp: 0, label: { ru: '$8 000 + 💡3 + 🧪3', en: '$8,000 + 💡3 + 🧪3', tr: '$8.000 + 💡3 + 🧪3' } },
+    { day: 7, coins: 15000, hint: 5, tube: 5, exp: 0, label: { ru: '$15 000 + 💡5 + 🧪5', en: '$15,000 + 💡5 + 🧪5', tr: '$15.000 + 💡5 + 🧪5' } }
 ];
 
 function getDailyStreakState() {
