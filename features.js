@@ -2,7 +2,6 @@
 // === МОДУЛЬ ВИЗУАЛА И ПРОГРЕССИИ: ЖИВОЙ ФОН, ТЕМЫ, EXP, КВЕСТЫ И ПОЛЁТ ===
 // =========================================================================
 
-// Расширенное сохранение для новых фич (уровень аккаунта, темы фона, квесты)
 let extra = {
     accLvl: 1,                  // Уровень профиля игрока
     accExp: 0,                  // Текущий опыт профиля
@@ -22,36 +21,32 @@ function saveExtra() {
     try { localStorage.setItem('panichka_sort_extra', JSON.stringify(extra)); } catch (e) {}
 }
 
-// Доступные фоновые темы для магазина (меняют градиент контейнера и цвет летающих частиц)
+// Доступные фоновые темы для магазина (сбалансированы под удержание)
 const THEMES = [
-    { id: 'classic', price: 0,   bg: 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%)', dot: '#38bdf8', name: { ru: 'Фон: Ночной космос', en: 'BG: Night Space', tr: 'Arka Plan: Gece' } },
-    { id: 'cyber',   price: 250, bg: 'linear-gradient(180deg, #19092d 0%, #3b0764 100%)', dot: '#f472b6', name: { ru: 'Фон: Киберпанк',     en: 'BG: Cyberpunk',   tr: 'Arka Plan: Siber' } },
-    { id: 'lab',     price: 450, bg: 'linear-gradient(180deg, #042f2e 0%, #064e3b 100%)', dot: '#34d399', name: { ru: 'Фон: Лаборатория',   en: 'BG: Emerald Lab', tr: 'Arka Plan: Lab' } },
-    { id: 'gold',    price: 900, bg: 'linear-gradient(180deg, #1c1917 0%, #451a03 100%)', dot: '#fbbf24', name: { ru: 'Фон: Золотой VIP',   en: 'BG: Golden VIP',  tr: 'Arka Plan: Altın' } }
+    { id: 'classic', price: 0,    bg: 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%)', dot: '#38bdf8', name: { ru: 'Фон: Ночной космос', en: 'BG: Night Space', tr: 'Arka Plan: Gece' } },
+    { id: 'cyber',   price: 900,  bg: 'linear-gradient(180deg, #19092d 0%, #3b0764 100%)', dot: '#f472b6', name: { ru: 'Фон: Киберпанк',     en: 'BG: Cyberpunk',   tr: 'Arka Plan: Siber' } },
+    { id: 'lab',     price: 3200, bg: 'linear-gradient(180deg, #042f2e 0%, #064e3b 100%)', dot: '#34d399', name: { ru: 'Фон: Лаборатория',   en: 'BG: Emerald Lab', tr: 'Arka Plan: Lab' } },
+    { id: 'gold',    price: 6000, bg: 'linear-gradient(180deg, #1c1917 0%, #451a03 100%)', dot: '#fbbf24', name: { ru: 'Фон: Золотой VIP',   en: 'BG: Golden VIP',  tr: 'Arka Plan: Altın' } }
 ];
 
-// Квесты с наградами и удвоением за рекламу
 const QUESTS = [
-    { id: 't5',  type: 'tubes', target: 5,  reward: 80,  title: { ru: 'Собери 5 полных колб',  en: 'Complete 5 tubes',  tr: '5 tüp tamamla' } },
-    { id: 't25', type: 'tubes', target: 25, reward: 250, title: { ru: 'Собери 25 полных колб', en: 'Complete 25 tubes', tr: '25 tüp tamamla' } },
-    { id: 'l3',  type: 'level', target: 3,  reward: 150, title: { ru: 'Пройди 3-й уровень',    en: 'Reach Level 3',     tr: 'Seviye 3 ol' } },
-    { id: 'l10', type: 'level', target: 10, reward: 500, title: { ru: 'Пройди 10-й уровень',   en: 'Reach Level 10',    tr: 'Seviye 10 ol' } }
+    { id: 't5',  type: 'tubes', target: 5,  reward: 40,  title: { ru: 'Собери 5 полных колб',  en: 'Complete 5 tubes',  tr: '5 tüp tamamla' } },
+    { id: 't25', type: 'tubes', target: 25, reward: 120, title: { ru: 'Собери 25 полных колб', en: 'Complete 25 tubes', tr: '25 tüp tamamla' } },
+    { id: 'l3',  type: 'level', target: 3,  reward: 60,  title: { ru: 'Пройди 3-й уровень',    en: 'Reach Level 3',     tr: 'Seviye 3 ol' } },
+    { id: 'l10', type: 'level', target: 10, reward: 220, title: { ru: 'Пройди 10-й уровень',   en: 'Reach Level 10',    tr: 'Seviye 10 ol' } }
 ];
 
-// Применение выбранной темы фона и запуск живых фоновых частиц (Canvas на заднем плане)
 let bgParticles = [];
 function initLiveBackground() {
     const wrapper = document.getElementById('game-wrapper');
     const board = document.getElementById('board-area');
     if (!wrapper || !board) return;
 
-    // Создаём прозрачный холст (Canvas) для летающих светящихся частиц позади колб
     const bgCanvas = document.createElement('canvas');
     bgCanvas.id = 'bg-particles-canvas';
     bgCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;';
     board.prepend(bgCanvas);
 
-    // Поднимаем контейнер колб и модальные окна выше слоя частиц
     const tubesCont = document.getElementById('tubes-container');
     if (tubesCont) { tubesCont.style.position = 'relative'; tubesCont.style.zIndex = '2'; }
 
@@ -95,17 +90,11 @@ function applyThemeStyle() {
     if (wrapper) wrapper.style.background = th.bg;
 }
 
-// =========================================================================
-// === ПОЛОСКА УРОВНЯ (EXP), КВЕСТЫ (🎯), ПОДАРОК (🎁) И АНИМАЦИЯ ПОЛЁТА ===
-// =========================================================================
-
 function getNeedExp(lvl) { return 100 + (lvl - 1) * 60; }
 
-// Создаём кнопки 🎯 / 🎁 и полоску уровня EXP при загрузке страницы
 window.addEventListener('load', () => {
     initLiveBackground();
 
-    // 1. Добавляем кнопки Квестов (🎯) и Ежедневного подарка (🎁) в левую группу кнопок сверху
     const topLeft = document.querySelector('.top-bar .btn-group');
     if (topLeft && !document.getElementById('q-btn')) {
         topLeft.insertAdjacentHTML('beforeend', `
@@ -114,7 +103,6 @@ window.addEventListener('load', () => {
         `);
     }
 
-    // 2. Вставляем полоску опыта аккаунта сразу под верхнюю панель
     const wrapper = document.getElementById('game-wrapper');
     const header = wrapper?.querySelector('.header');
     if (wrapper && header && !document.getElementById('exp-strip')) {
@@ -131,7 +119,6 @@ window.addEventListener('load', () => {
         wrapper.insertBefore(strip, header);
     }
 
-    // 3. Добавляем модальные окна для Квестов и Подарка
     const board = document.getElementById('board-area');
     if (board && !document.getElementById('quest-modal')) {
         board.insertAdjacentHTML('beforeend', `
@@ -152,7 +139,6 @@ window.addEventListener('load', () => {
     updateExpBar();
     updateAlertBadges();
 });
-
 function updateExpBar() {
     const lvlEl = document.getElementById('acc-lvl-txt');
     const barEl = document.getElementById('acc-exp-bar');
@@ -174,7 +160,7 @@ function gainExp(pts) {
         extra.accExp -= need;
         extra.accLvl++;
         need = getNeedExp(extra.accLvl);
-        const bonus = extra.accLvl * 60;
+        const bonus = extra.accLvl * 20;
         state.coins += bonus;
         saveProgress();
         showFloatText(`⭐ ${t('level')} ${extra.accLvl}! +$${bonus}`, '#fbbf24');
@@ -184,14 +170,12 @@ function gainExp(pts) {
     updateExpBar();
 }
 
-// Очередь смещения для всплывающих текстов, чтобы они не накладывались друг на друга
 let activeFloatCount = 0;
 
 function showFloatText(text, color = '#4ade80') {
     const board = document.getElementById('board-area');
     if (!board) return;
 
-    // Сдвигаем новую надпись на 28 пикселей ниже за каждую уже висящую на экране
     const offsetY = activeFloatCount * 28;
     activeFloatCount++;
 
@@ -211,7 +195,6 @@ function showFloatText(text, color = '#4ade80') {
     }, 950);
 }
 
-// Плавный визуальный перелёт шарика по дуге между колбами
 function animateBallFlight(fromIdx, toIdx, colorHex) {
     const board = document.getElementById('board-area');
     const tubeEls = document.querySelectorAll('.tube');
@@ -223,7 +206,6 @@ function animateBallFlight(fromIdx, toIdx, colorHex) {
     const r1 = elFrom.getBoundingClientRect();
     const r2 = elTo.getBoundingClientRect();
 
-    // Подхватываем текущий скин из магазина (шар, ромб-кристалл или энерго-блок)
     const skinObj = SKINS.find(s => s.id === state.activeSkin) || SKINS.at(0);
 
     const flyer = document.createElement('div');
@@ -238,7 +220,6 @@ function animateBallFlight(fromIdx, toIdx, colorHex) {
     setTimeout(() => flyer.remove(), 230);
 }
 
-// Перехватываем клик по колбе для анимации перелёта и награды за собранную колбу
 const origOnTubeClick = onTubeClick;
 
 onTubeClick = function(idx) {
@@ -248,7 +229,6 @@ onTubeClick = function(idx) {
 
     origOnTubeClick(idx);
 
-    // Если ход состоялся — запускаем анимацию полёта шарика и даём опыт
     if (prevSel !== -1 && selectedTube === -1 && prevSel !== idx && movingColor) {
         animateBallFlight(prevSel, idx, movingColor);
         gainExp(5);
@@ -256,21 +236,16 @@ onTubeClick = function(idx) {
         const afterDone = tubes.filter(t => t.length === TUBE_CAPACITY && t.every(c => c === t.at(0))).length;
         if (afterDone > beforeDone) {
             extra.tubesCompleted++;
-            state.coins += 15;
-            saveProgress();
             saveExtra();
             renderBoard();
-            const andWord = currentLang === 'en' ? 'and' : (currentLang === 'tr' ? 've' : 'и');
             const realExp = Math.round(15 * (1 + (typeof prog !== 'undefined' ? (prog.upgExp || 0) * 0.15 : 0)));
-            showFloatText('✨ +$5 ' + andWord + ' +' + realExp + ' EXP!', '#4ade80');
+            showFloatText('✨ +' + realExp + ' EXP!', '#4ade80');
             gainExp(15);
             updateAlertBadges();
         }
     }
 };
 
-
-// Квесты и ежедневный подарок
 function updateAlertBadges() {
     const today = new Date().toDateString();
     const dBtn = document.getElementById('d-btn');
@@ -316,9 +291,9 @@ function openDaily() {
     closeModals();
     const today = new Date().toDateString();
     const ok = extra.lastDaily !== today;
-    document.getElementById('d-desc').textContent = ok ? 'Ваш подарок дня готов: +$150!' : 'Подарок сегодня уже получен! Заходите завтра!';
+    document.getElementById('d-desc').textContent = ok ? 'Ваш подарок дня готов: +$60!' : 'Подарок сегодня уже получен! Заходите завтра!';
     document.getElementById('d-btns').innerHTML = ok
-        ? '<button class="action-btn btn-next modal-btn" onclick="claimDaily(1)">🎁 +$150</button><button class="action-btn btn-ad modal-btn" onclick="claimDaily(2)">📺 +$300 (x2)</button>'
+        ? '<button class="action-btn btn-next modal-btn" onclick="claimDaily(1)">🎁 +$60</button><button class="action-btn btn-ad modal-btn" onclick="claimDaily(2)">📺 +$120 (x2)</button>'
         : '';
     document.getElementById('daily-modal').style.display = 'flex';
 }
@@ -328,7 +303,7 @@ function claimDaily(mult) {
     if (extra.lastDaily === today) return;
     const give = () => {
         extra.lastDaily = today;
-        state.coins += 150 * mult;
+        state.coins += 60 * mult;
         saveExtra();
         saveProgress();
         renderBoard();
@@ -337,16 +312,14 @@ function claimDaily(mult) {
     };
     if (mult > 1) showRewarded(give); else give();
 }
-
-// Инициализация стилей колб и рекламных эксклюзивов для 3-вкладочного магазина
 extra.activeTube = extra.activeTube || 'glass';
 extra.unlockedTubes = extra.unlockedTubes || ['glass'];
 
 const TUBE_SKINS = [
-    { id: 'glass',  css: '',            price: 0,   isAd: false, name: { ru: 'Обычное стекло',      en: 'Classic Glass',    tr: 'Klasik Cam' } },
-    { id: 'neon',   css: 'tube-neon',   price: 200, isAd: false, name: { ru: 'Голубой неон',        en: 'Cyber Neon',       tr: 'Mavi Neon' } },
-    { id: 'gold',   css: 'tube-gold',   price: 450, isAd: false, name: { ru: 'Золотой слиток',      en: 'Golden Tube',      tr: 'Altın Tüp' } },
-    { id: 'plasma', css: 'tube-plasma', price: 0,   isAd: true,  name: { ru: '⚡ Плазменная капсула', en: '⚡ Plasma Capsule', tr: '⚡ Plazma Kapsül' } }
+    { id: 'glass',  css: '',            price: 0,    isAd: false, name: { ru: 'Обычное стекло',      en: 'Classic Glass',    tr: 'Klasik Cam' } },
+    { id: 'neon',   css: 'tube-neon',   price: 400,  isAd: false, name: { ru: 'Голубой неон',        en: 'Cyber Neon',       tr: 'Mavi Neon' } },
+    { id: 'gold',   css: 'tube-gold',   price: 2500, isAd: false, name: { ru: 'Золотой слиток',      en: 'Golden Tube',      tr: 'Altın Tüp' } },
+    { id: 'plasma', css: 'tube-plasma', price: 0,    isAd: true,  name: { ru: '⚡ Плазменная капсула', en: '⚡ Plasma Capsule', tr: '⚡ Plazma Kapsül' } }
 ];
 
 if (!SKINS.some(s => s.id === 'atom')) {
@@ -447,11 +420,6 @@ function shopAdUnlock(cat, id) {
     });
 }
 
-// =========================================================================
-// === РАЗДЕЛЕНИЕ «ЭТАП / РАНГ» И ТРИ ВКЛАДКИ ТАБЛИЦЫ ЛИДЕРОВ ===
-// =========================================================================
-
-// 1. Меняем текст верхней полоски опыта с «Ур.» на «Ранг» (Rank / Rütbe)
 updateExpBar = function() {
     const lvlEl = document.getElementById('acc-lvl-txt');
     const barEl = document.getElementById('acc-exp-bar');
@@ -466,7 +434,6 @@ updateExpBar = function() {
     numEl.textContent = extra.accExp + '/' + need;
 };
 
-// Переопределяем всплывающее окно при повышении ранга
 gainExp = function(pts) {
     extra.accExp += pts;
     let need = getNeedExp(extra.accLvl);
@@ -474,7 +441,7 @@ gainExp = function(pts) {
         extra.accExp -= need;
         extra.accLvl++;
         need = getNeedExp(extra.accLvl);
-        const bonus = extra.accLvl * 60;
+        const bonus = extra.accLvl * 20;
         state.coins += bonus;
         saveProgress();
         const w = currentLang === 'en' ? 'Rank' : (currentLang === 'tr' ? 'Rütbe' : 'Ранг');
@@ -485,10 +452,7 @@ gainExp = function(pts) {
     updateExpBar();
 };
 
-// Сразу обновляем подпись полоски при загрузке
 setTimeout(updateExpBar, 100);
-
-// 2. Тройной лидерборд: Этапы (bestlevel), Ранг (bestrank) и Баланс (bestcoins)
 let activeLbTab = 'stage';
 
 function switchLbTab(tab) {
@@ -536,7 +500,6 @@ openLeaderboard = function() {
     }
 };
 
-// Безопасная отправка рекордов в 3 лидерборда с интервалом > 1 сек (требование Яндекс SDK)
 let lastSortLbSync = 0;
 setInterval(() => {
     if (!yandexLb || Date.now() - lastSortLbSync < 10000) return;
@@ -545,10 +508,6 @@ setInterval(() => {
     if (extra.accLvl > 1) setTimeout(() => yandexLb.setLeaderboardScore('bestrank', Math.floor(extra.accLvl)).catch(() => {}), 1500);
     if (state.coins > 0) setTimeout(() => yandexLb.setLeaderboardScore('bestcoins', Math.floor(state.coins)).catch(() => {}), 3000);
 }, 15000);
-
-// =========================================================================
-// === ПРОФИЛЬ ИГРОКА И СМЕНА НИКНЕЙМА ДЛЯ ОТОБРАЖЕНИЯ В ТОПЕ ===
-// =========================================================================
 
 extra.customName = extra.customName || '';
 
@@ -629,38 +588,29 @@ openLeaderboard = function() {
     }, 60);
 };
 
-// =========================================================================
-// === РАСШИРЕННЫЕ КВЕСТЫ (10 ЗАДАНИЙ) И УСКОРЕННАЯ ПРОКАЧКА РАНГА (EXP) ===
-// =========================================================================
-
-// Дополняем статистику игрока для новых типов квестов
 extra.adsWatched = extra.adsWatched || 0;
 extra.comboStreak = 0;
-
-// Увеличиваем темп роста Ранга (требуется меньше EXP на уровень, чтобы Ранг обгонял Этап)
 getNeedExp = function(lvl) { return 80 + (lvl - 1) * 40; };
 
-// 15 разнообразных квестов: колбы, этапы, коллекция, ранги (5–25) и легенды (100-й Ранг / 100-й Этап)
 const FULL_QUESTS = [
-    { id: 't5',    type: 'tubes', target: 5,    reward: 80,    exp: 60,   title: { ru: 'Собери 5 полных колб',        en: 'Complete 5 tubes',        tr: '5 tüp tamamla' } },
-    { id: 't15',   type: 'tubes', target: 15,   reward: 180,   exp: 100,  title: { ru: 'Собери 15 полных колб',       en: 'Complete 15 tubes',       tr: '15 tüp tamamla' } },
-    { id: 't40',   type: 'tubes', target: 40,   reward: 400,   exp: 180,  title: { ru: 'Собери 40 полных колб',       en: 'Complete 40 tubes',       tr: '40 tüp tamamla' } },
-    { id: 'l3',    type: 'level', target: 3,    reward: 120,   exp: 80,   title: { ru: 'Дойди до 3-го этапа',        en: 'Reach Stage 3',           tr: '3. aşamaya ulaş' } },
-    { id: 'l8',    type: 'level', target: 8,    reward: 300,   exp: 150,  title: { ru: 'Дойди до 8-го этапа',        en: 'Reach Stage 8',           tr: '8. aşamaya ulaş' } },
-    { id: 'l15',   type: 'level', target: 15,   reward: 650,   exp: 250,  title: { ru: 'Дойди до 15-го этапа',       en: 'Reach Stage 15',          tr: '15. aşamaya ulaş' } },
-    { id: 's3',    type: 'skins', target: 3,    reward: 200,   exp: 120,  title: { ru: 'Открой 3 предмета в магазине', en: 'Unlock 3 shop items',   tr: '3 mağaza öğesi aç' } },
-    { id: 's6',    type: 'skins', target: 6,    reward: 500,   exp: 220,  title: { ru: 'Открой 6 предметов в магазине', en: 'Unlock 6 shop items',   tr: '6 mağaza öğesi aç' } },
-    { id: 'c5000', type: 'coins', target: 5000, reward: 600,   exp: 250,  title: { ru: 'Накопи 5000 монет на балансе', en: 'Hold 5000 coins balance', tr: '5000 altın biriktir' } },
-    { id: 'rk5',   type: 'rank',  target: 5,    reward: 350,   exp: 150,  title: { ru: 'Достигни 5-го Ранга',        en: 'Reach Rank 5',            tr: '5. rütbeye ulaş' } },
-    { id: 'rk10',  type: 'rank',  target: 10,   reward: 700,   exp: 250,  title: { ru: 'Достигни 10-го Ранга',       en: 'Reach Rank 10',           tr: '10. rütbeye ulaş' } },
-    { id: 'rk15',  type: 'rank',  target: 15,   reward: 1100,  exp: 350,  title: { ru: 'Достигни 15-го Ранга',       en: 'Reach Rank 15',           tr: '15. rütbeye ulaş' } },
-    { id: 'rk20',  type: 'rank',  target: 20,   reward: 1500,  exp: 450,  title: { ru: 'Достигни 20-го Ранга',       en: 'Reach Rank 20',           tr: '20. rütbeye ulaş' } },
-    { id: 'rk25',  type: 'rank',  target: 25,   reward: 2000,  exp: 600,  title: { ru: 'Достигни 25-го Ранга',       en: 'Reach Rank 25',           tr: '25. rütbeye ulaş' } },
-    { id: 'rk100', type: 'rank',  target: 100,  reward: 10000, exp: 1000, title: { ru: '👑 Легенда: 100-й Ранг (+Корона)', en: '👑 Legend: Rank 100 (+Crown)', tr: '👑 Efsane: 100. Rütbe (+Taç)' } },
-    { id: 'l100',  type: 'level', target: 100,  reward: 15000, exp: 1500, title: { ru: '💎 Гранд-мастер: 100-й Этап', en: '💎 Grandmaster: Stage 100', tr: '💎 Büyük Usta: 100. Aşama' } }
+    { id: 't5',    type: 'tubes', target: 5,    reward: 40,    exp: 60,   title: { ru: 'Собери 5 полных колб',        en: 'Complete 5 tubes',        tr: '5 tüp tamamla' } },
+    { id: 't15',   type: 'tubes', target: 15,   reward: 90,    exp: 100,  title: { ru: 'Собери 15 полных колб',       en: 'Complete 15 tubes',       tr: '15 tüp tamamla' } },
+    { id: 't40',   type: 'tubes', target: 40,   reward: 200,   exp: 180,  title: { ru: 'Собери 40 полных колб',       en: 'Complete 40 tubes',       tr: '40 tüp tamamla' } },
+    { id: 'l3',    type: 'level', target: 3,    reward: 60,    exp: 80,   title: { ru: 'Дойди до 3-го этапа',        en: 'Reach Stage 3',           tr: '3. aşamaya ulaş' } },
+    { id: 'l8',    type: 'level', target: 8,    reward: 150,   exp: 150,  title: { ru: 'Дойди до 8-го этапа',        en: 'Reach Stage 8',           tr: '8. aşamaya ulaş' } },
+    { id: 'l15',   type: 'level', target: 15,   reward: 320,   exp: 250,  title: { ru: 'Дойди до 15-го этапа',       en: 'Reach Stage 15',          tr: '15. aşamaya ulaş' } },
+    { id: 's3',    type: 'skins', target: 3,    reward: 100,   exp: 120,  title: { ru: 'Открой 3 предмета в магазине', en: 'Unlock 3 shop items',   tr: '3 mağaza öğesi aç' } },
+    { id: 's6',    type: 'skins', target: 6,    reward: 250,   exp: 220,  title: { ru: 'Открой 6 предметов в магазине', en: 'Unlock 6 shop items',   tr: '6 mağaza öğesi aç' } },
+    { id: 'c5000', type: 'coins', target: 5000, reward: 350,   exp: 250,  title: { ru: 'Накопи 5000 монет на балансе', en: 'Hold 5000 coins balance', tr: '5000 altın biriktir' } },
+    { id: 'rk5',   type: 'rank',  target: 5,    reward: 160,   exp: 150,  title: { ru: 'Достигни 5-го Ранга',        en: 'Reach Rank 5',            tr: '5. rütbeye ulaş' } },
+    { id: 'rk10',  type: 'rank',  target: 10,   reward: 350,   exp: 250,  title: { ru: 'Достигни 10-го Ранга',       en: 'Reach Rank 10',           tr: '10. rütbeye ulaş' } },
+    { id: 'rk15',  type: 'rank',  target: 15,   reward: 550,   exp: 350,  title: { ru: 'Достигни 15-го Ранга',       en: 'Reach Rank 15',           tr: '15. rütbeye ulaş' } },
+    { id: 'rk20',  type: 'rank',  target: 20,   reward: 750,   exp: 450,  title: { ru: 'Достигни 20-го Ранга',       en: 'Reach Rank 20',           tr: '20. rütbeye ulaş' } },
+    { id: 'rk25',  type: 'rank',  target: 25,   reward: 1000,  exp: 600,  title: { ru: 'Достигни 25-го Ранга',       en: 'Reach Rank 25',           tr: '25. rütbeye ulaş' } },
+    { id: 'rk100', type: 'rank',  target: 100,  reward: 5000,  exp: 1000, title: { ru: '👑 Легенда: 100-й Ранг (+Корона)', en: '👑 Legend: Rank 100 (+Crown)', tr: '👑 Efsane: 100. Rütbe (+Taç)' } },
+    { id: 'l100',  type: 'level', target: 100,  reward: 8000,  exp: 1500, title: { ru: '💎 Гранд-мастер: 100-й Этап', en: '💎 Grandmaster: Stage 100', tr: '💎 Büyük Usta: 100. Aşama' } }
 ];
 
-// Подсчёт прогресса для любого типа квеста
 function getQuestProgress(q) {
     if (q.type === 'tubes') return extra.tubesCompleted;
     if (q.type === 'level') return state.level;
@@ -674,7 +624,6 @@ function getQuestProgress(q) {
     return 0;
 }
 
-// 1. Бонус +80 EXP при завершении каждого этапа
 const prevClaimWinForExp = claimWin;
 claimWin = function(mult) {
     const prevLvl = state.level;
@@ -688,7 +637,6 @@ claimWin = function(mult) {
     }, 100);
 };
 
-// 2. Бонус +120 EXP за покупку или разблокировку нового предмета в магазине
 const prevShopEquipForExp = shopEquip;
 let lastKnownOwnedCount = 0;
 shopEquip = function(cat, id) {
@@ -705,7 +653,6 @@ setTimeout(() => {
     lastKnownOwnedCount = (state.unlockedSkins?.length || 0) + (extra.unlockedTubes?.length || 0) + (extra.unlockedThemes?.length || 0);
 }, 300);
 
-// 3. Учёт просмотров бонусной рекламы для квестов и +50 EXP за просмотр
 const prevShowRewardedForExp = showRewarded;
 showRewarded = function(onSuccess) {
     prevShowRewardedForExp(() => {
@@ -717,7 +664,6 @@ showRewarded = function(onSuccess) {
     });
 };
 
-// 4. Обновлённый экран квестов с 10 заданиями и наградой EXP
 updateAlertBadges = function() {
     const today = new Date().toDateString();
     const dBtn = document.getElementById('d-btn');
@@ -764,16 +710,11 @@ function claimFullQ(id, mult) {
     if (mult > 1) showRewarded(give); else give();
 }
 
-// Автоматическая корона 👑 перед именем игрока в Топе за достижение 100-го Ранга
 const prevGetDisplayName = getDisplayPlayerName;
 getDisplayPlayerName = function() {
     const baseName = prevGetDisplayName();
     return extra.accLvl >= 100 ? ('👑 ' + baseName) : baseName;
 };
-
-// =========================================================================
-// === СИСТЕМА ТИТУЛОВ (ЗВАНИЙ) И ПОСТОЯННЫЙ МНОЖИТЕЛЬ МОНЕТ ЗА РАНГ ===
-// =========================================================================
 
 const RANKS_TITLES = [
     { minRank: 1,   mult: 1.0, ru: '🌱 Новичок',           en: '🌱 Novice',          tr: '🌱 Acemi' },
@@ -792,7 +733,6 @@ function getCurrentTitleObj() {
     return cur;
 }
 
-// Вставляем плашку текущего звания и множителя дохода в полоску Ранга
 window.addEventListener('load', () => {
     const strip = document.getElementById('exp-strip');
     if (strip && !document.getElementById('title-badge')) {
@@ -812,11 +752,10 @@ function refreshTitleBadge() {
     badge.textContent = label + ' (x' + tObj.mult + ')';
 }
 
-// Умножаем награду за победу на множитель текущего титула игрока
 const origClaimWinForTitle = claimWin;
 claimWin = function(mult) {
     const tObj = getCurrentTitleObj();
-    const extraBonus = Math.floor((BASE_WIN_REWARD + Math.floor(state.level * 5)) * mult * (tObj.mult - 1));
+    const extraBonus = Math.floor((BASE_WIN_REWARD + Math.floor(state.level * 2)) * mult * (tObj.mult - 1));
     origClaimWinForTitle(mult);
     if (extraBonus > 0) {
         setTimeout(() => {
@@ -827,7 +766,6 @@ claimWin = function(mult) {
     }
 };
 
-// Учёт общего числа ходов за всё время
 extra.totalMoves = extra.totalMoves || 0;
 const origTubeClickMoves = onTubeClick;
 onTubeClick = function(idx) {
@@ -840,16 +778,15 @@ onTubeClick = function(idx) {
     }
 };
 
-// Дополняем FULL_QUESTS новыми заданиями (всего 22 квеста!)
 FULL_QUESTS.push(
-    { id: 'm100',   type: 'moves', target: 100,   reward: 150,   exp: 90,   title: { ru: 'Сделай 100 перекладываний',      en: 'Make 100 moves',          tr: '100 hamle yap' } },
-    { id: 'm500',   type: 'moves', target: 500,   reward: 650,   exp: 300,  title: { ru: 'Сделай 500 перекладываний',      en: 'Make 500 moves',          tr: '500 hamle yap' } },
-    { id: 't150',   type: 'tubes', target: 150,   reward: 1200,  exp: 500,  title: { ru: 'Собери 150 полных колб',         en: 'Complete 150 tubes',      tr: '150 tüp tamamla' } },
-    { id: 't500',   type: 'tubes', target: 500,   reward: 4000,  exp: 1200, title: { ru: 'Собери 500 полных колб',         en: 'Complete 500 tubes',      tr: '500 tüp tamamla' } },
-    { id: 'l35',    type: 'level', target: 35,    reward: 1500,  exp: 550,  title: { ru: 'Дойди до 35-го этапа',           en: 'Reach Stage 35',          tr: '35. aşamaya ulaş' } },
-    { id: 'l60',    type: 'level', target: 60,    reward: 3500,  exp: 900,  title: { ru: 'Дойди до 60-го этапа',           en: 'Reach Stage 60',          tr: '60. aşamaya ulaş' } },
-    { id: 'c15000', type: 'coins', target: 15000, reward: 2000,  exp: 600,  title: { ru: 'Накопи 15 000 монет на балансе', en: 'Hold 15,000 coins',       tr: '15.000 altın biriktir' } },
-    { id: 's9',     type: 'skins', target: 9,     reward: 1800,  exp: 700,  title: { ru: 'Собери всю коллекцию (9 шт.)',   en: 'Unlock full shop (9/9)',  tr: 'Tüm mağazayı aç (9/9)' } }
+    { id: 'm100',   type: 'moves', target: 100,   reward: 80,    exp: 90,   title: { ru: 'Сделай 100 перекладываний',      en: 'Make 100 moves',          tr: '100 hamle yap' } },
+    { id: 'm500',   type: 'moves', target: 500,   reward: 320,   exp: 300,  title: { ru: 'Сделай 500 перекладываний',      en: 'Make 500 moves',          tr: '500 hamle yap' } },
+    { id: 't150',   type: 'tubes', target: 150,   reward: 600,   exp: 500,  title: { ru: 'Собери 150 полных колб',         en: 'Complete 150 tubes',      tr: '150 tüp tamamla' } },
+    { id: 't500',   type: 'tubes', target: 500,   reward: 2000,  exp: 1200, title: { ru: 'Собери 500 полных колб',         en: 'Complete 500 tubes',      tr: '500 tüp tamamla' } },
+    { id: 'l35',    type: 'level', target: 35,    reward: 750,   exp: 550,  title: { ru: 'Дойди до 35-го этапа',           en: 'Reach Stage 35',          tr: '35. aşamaya ulaş' } },
+    { id: 'l60',    type: 'level', target: 60,    reward: 1800,  exp: 900,  title: { ru: 'Дойди до 60-го этапа',           en: 'Reach Stage 60',          tr: '60. aşamaya ulaş' } },
+    { id: 'c15000', type: 'coins', target: 15000, reward: 1200,  exp: 600,  title: { ru: 'Накопи 15 000 монет на балансе', en: 'Hold 15,000 coins',       tr: '15.000 altın biriktir' } },
+    { id: 's9',     type: 'skins', target: 9,     reward: 1000,  exp: 700,  title: { ru: 'Собери всю коллекцию (9 шт.)',   en: 'Unlock full shop (9/9)',  tr: 'Tüm mağazayı aç (9/9)' } }
 );
 
 const prevGetQuestProgress = getQuestProgress;

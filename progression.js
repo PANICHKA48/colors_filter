@@ -21,10 +21,9 @@ function saveProg() {
     try { localStorage.setItem('panichka_sort_prog', JSON.stringify(prog)); } catch (e) {}
 }
 
-// 3 ветки постоянной прокачки за монеты с понятным описанием и расчётом итогового бонуса
 const UPGRADES = [
     {
-        id: 'coins', key: 'upgCoins', max: 10, baseCost: 150, stepCost: 120, perLvl: 10,
+        id: 'coins', key: 'upgCoins', max: 10, baseCost: 200, stepCost: 200, perLvl: 10,
         name: { ru: '🔬 Катализатор монет', en: '🔬 Coin Catalyst', tr: '🔬 Altın Katalizörü' },
         desc: {
             ru: 'Больше монет за прохождение этапов (+{val}%)',
@@ -33,7 +32,7 @@ const UPGRADES = [
         }
     },
     {
-        id: 'exp', key: 'upgExp', max: 10, baseCost: 120, stepCost: 100, perLvl: 15,
+        id: 'exp', key: 'upgExp', max: 10, baseCost: 200, stepCost: 180, perLvl: 15,
         name: { ru: '⚡ Ускоритель опыта', en: '⚡ EXP Booster', tr: '⚡ EXP Hızlandırıcı' },
         desc: {
             ru: 'Ускоряет получение опыта Ранга (+{val}%)',
@@ -42,7 +41,7 @@ const UPGRADES = [
         }
     },
     {
-        id: 'undo', key: 'upgFreeUndo', max: 5, baseCost: 250, stepCost: 200, perLvl: 10,
+        id: 'undo', key: 'upgFreeUndo', max: 5, baseCost: 350, stepCost: 350, perLvl: 10,
         name: { ru: '🧠 Интуиция отмены', en: '🧠 Free Undo %', tr: '🧠 Ücretsiz Geri Al' },
         desc: {
             ru: 'Шанс отменить ход бесплатно без траты монет ({val}%)',
@@ -52,7 +51,6 @@ const UPGRADES = [
     }
 ];
 
-// Уникальные титулы за разные стили игры и подвиги (каждый даёт свой бонус!)
 const SPECIAL_TITLES = [
     { id: 'novice',    bonusMult: 1.0,  check: () => true,                        name: { ru: '🌱 Новичок',         en: '🌱 Novice',        tr: '🌱 Acemi' },        desc: { ru: 'Базовый титул', en: 'Starter title', tr: 'Başlangıç' } },
     { id: 'alchemist', bonusMult: 1.15, check: () => extra.accLvl >= 5,           name: { ru: '🧪 Алхимик',         en: '🧪 Alchemist',     tr: '🧪 Simyacı' },      desc: { ru: 'Достигни 5-го Ранга', en: 'Reach Rank 5', tr: '5. Rütbe' } },
@@ -72,18 +70,12 @@ function getActiveSpecialTitle() {
     return unlocked.at(-1) || SPECIAL_TITLES.at(0);
 }
 
-// =========================================================================
-// === ОКНО ЛАБОРАТОРИИ (⚗️), ЗАЛ ТИТУЛОВ И СЧЁТЧИК СЕРИИ ПОБЕД (🔥) ===
-// =========================================================================
-
 window.addEventListener('load', () => {
-    // 1. Добавляем кнопку Лаборатории улучшений (⚗️) в верхнюю левую панель
     const topLeft = document.querySelector('.top-bar .btn-group');
     if (topLeft && !document.getElementById('lab-btn')) {
         topLeft.insertAdjacentHTML('beforeend', '<button class="icon-btn" id="lab-btn" onclick="openLabModal()" title="Лаборатория">⚗️</button>');
     }
 
-    // 2. Делаем плашку титула вверху кликабельной (открывает Зал Титулов) и добавляем значок Стрика 🔥
     const badge = document.getElementById('title-badge');
     if (badge) {
         badge.style.cursor = 'pointer';
@@ -96,7 +88,6 @@ window.addEventListener('load', () => {
         header.insertAdjacentHTML('beforeend', '<div class="stat-box" id="streak-box" style="text-align:center;"><span class="stat-label" id="streak-lbl">Серия</span><span class="stat-value" id="streak-val" style="color:#f97316;">🔥 0</span></div>');
     }
 
-    // 3. Добавляем модальные окна для Лаборатории и Зала Титулов
     const board = document.getElementById('board-area');
     if (board && !document.getElementById('lab-modal')) {
         board.insertAdjacentHTML('beforeend', `
@@ -132,7 +123,6 @@ refreshTitleBadge = function() {
     const totalMult = (tObj.bonusMult + prog.upgCoins * 0.1).toFixed(2);
     badge.textContent = label + ' (x' + totalMult + ') ▾';
 };
-
 function openLabModal() {
     closeModals();
     const titleEl = document.getElementById('lab-title');
@@ -208,7 +198,6 @@ function equipSpecialTitle(id) {
     openTitlesModal();
 }
 
-// Перехватываем отмену хода (сброс стрика + шанс бесплатной отмены от «Интуиции»)
 const prevUndoForProg = undoMove;
 undoMove = function() {
     if (historyStack.length === 0) return;
@@ -230,7 +219,6 @@ undoMove = function() {
     prevUndoForProg();
 };
 
-// Перехватываем рестарт (сброс стрика) и победу (рост стрика + спидран-подвиг + бонусы)
 const prevRestartForProg = restartLevel;
 restartLevel = function() {
     prog.winStreak = 0;
@@ -248,7 +236,7 @@ claimWin = function(mult) {
         prog.winStreak++;
         if (prog.winStreak > prog.bestStreak) prog.bestStreak = prog.winStreak;
         if (lastMoves <= 12) prog.fastWins++;
-        const streakBonus = prog.winStreak * 15;
+        const streakBonus = prog.winStreak * 5;
         state.coins += streakBonus;
         saveProgress();
         saveProg();
@@ -258,7 +246,6 @@ claimWin = function(mult) {
     }
 };
 
-// Усиливаем получаемый опыт за счёт прокачки «Ускоритель опыта»
 const prevGainExpForProg = gainExp;
 gainExp = function(pts) {
     const mult = 1 + (prog.upgExp || 0) * 0.15;
@@ -269,28 +256,24 @@ gainExp = function(pts) {
 // === ЕДИНЫЙ ЭКОНОМИЧЕСКИЙ РЕБАЛАНС (ЦЕНЫ, НАГРАДЫ И КВЕСТЫ) ===
 // =========================================================================
 
-// 1. Новые сбалансированные цены в Магазине (Формы, Колбы, Фоны)
 const NEW_PRICES = {
-    gem: 300, pill: 1200,
-    neon: 450, gold: 1800,
-    cyber: 600, lab: 1500
+    gem: 250, pill: 1800,
+    neon: 400, gold: 2500,
+    cyber: 900, lab: 3200
 };
 SKINS.forEach(s => { if (NEW_PRICES[s.id]) s.price = NEW_PRICES[s.id]; });
 TUBE_SKINS.forEach(t => { if (NEW_PRICES[t.id]) t.price = NEW_PRICES[t.id]; });
 THEMES.forEach(th => {
-    if (th.id === 'cyber') th.price = 600;
-    if (th.id === 'lab')   th.price = 1500;
-    if (th.id === 'gold')  th.price = 3500;
+    if (th.id === 'cyber') th.price = 900;
+    if (th.id === 'lab')   th.price = 3200;
+    if (th.id === 'gold')  th.price = 6000;
 });
 
-// 2. Новые цены улучшений в Лаборатории (окупаемая прогрессия)
 UPGRADES.forEach(u => {
-    if (u.id === 'coins') { u.baseCost = 250; u.stepCost = 250; }
-    if (u.id === 'exp')   { u.baseCost = 200; u.stepCost = 200; }
-    if (u.id === 'undo')  { u.baseCost = 400; u.stepCost = 400; }
+    if (u.id === 'coins') { u.baseCost = 200; u.stepCost = 200; }
+    if (u.id === 'exp')   { u.baseCost = 200; u.stepCost = 180; }
+    if (u.id === 'undo')  { u.baseCost = 350; u.stepCost = 350; }
 });
-
-// 3. Корректируем базовую награду за этап ($40 + $5 за номер этапа) и бонус за 1 колбу ($5 вместо $15)
 var prevClickClearHint = onTubeClick;
 onTubeClick = function(idx) {
     var beforeMoves = movesCount;
@@ -300,32 +283,32 @@ onTubeClick = function(idx) {
         renderBoard();
     }
 };
-// 4. Ребаланс наград во всех 22 квестах под новую экономику
+
 const QUEST_ECONOMY = {
-    t5:    { reward: 60,   exp: 50 },
-    m100:  { reward: 90,   exp: 70 },
-    l3:    { reward: 100,  exp: 80 },
-    t15:   { reward: 150,  exp: 110 },
-    s3:    { reward: 180,  exp: 130 },
-    rk5:   { reward: 220,  exp: 150 },
-    l8:    { reward: 260,  exp: 180 },
-    t40:   { reward: 350,  exp: 220 },
-    m500:  { reward: 450,  exp: 280 },
-    rk10:  { reward: 500,  exp: 300 },
-    l15:   { reward: 550,  exp: 340 },
-    s6:    { reward: 650,  exp: 400 },
-    rk15:  { reward: 800,  exp: 450 },
-    t150:  { reward: 1000, exp: 550 },
-    rk20:  { reward: 1150, exp: 600 },
-    l35:   { reward: 1300, exp: 700 },
-    rk25:  { reward: 1600, exp: 800 },
-    s9:    { reward: 1800, exp: 900 },
-    c5000: { reward: 1200, exp: 500 },
-    l60:   { reward: 2500, exp: 1100 },
-    t500:  { reward: 3200, exp: 1400 },
-    c15000:{ reward: 3500, exp: 1500 },
-    rk100: { reward: 7500, exp: 2500 },
-    l100:  { reward: 8500, exp: 3000 }
+    t5:    { reward: 40,   exp: 50 },
+    m100:  { reward: 60,   exp: 70 },
+    l3:    { reward: 60,   exp: 80 },
+    t15:   { reward: 90,   exp: 110 },
+    s3:    { reward: 100,  exp: 130 },
+    rk5:   { reward: 140,  exp: 150 },
+    l8:    { reward: 150,  exp: 180 },
+    t40:   { reward: 200,  exp: 220 },
+    m500:  { reward: 260,  exp: 280 },
+    rk10:  { reward: 300,  exp: 300 },
+    l15:   { reward: 320,  exp: 340 },
+    s6:    { reward: 380,  exp: 400 },
+    rk15:  { reward: 480,  exp: 450 },
+    t150:  { reward: 600,  exp: 550 },
+    rk20:  { reward: 700,  exp: 600 },
+    l35:   { reward: 750,  exp: 700 },
+    rk25:  { reward: 950,  exp: 800 },
+    s9:    { reward: 1000, exp: 900 },
+    c5000: { reward: 600,  exp: 500 },
+    l60:   { reward: 1500, exp: 1100 },
+    t500:  { reward: 2000, exp: 1400 },
+    c15000:{ reward: 2000, exp: 1500 },
+    rk100: { reward: 4500, exp: 2500 },
+    l100:  { reward: 5000, exp: 3000 }
 };
 
 FULL_QUESTS.forEach(q => {
@@ -335,14 +318,8 @@ FULL_QUESTS.forEach(q => {
     }
 });
 
-// Сортируем квесты от самых лёгких и дешёвых к самым сложным и дорогим
 FULL_QUESTS.sort((a, b) => a.reward - b.reward);
 
-// =========================================================================
-// === ПАТЧ ИСПРАВЛЕНИЙ: ЗАЩИТА ОТ ФАРМА, ПЕРЕВОДЫ И ТОЧНЫЕ НАГРАДЫ ===
-// =========================================================================
-
-// 1. Защита от накрутки монет/опыта через кнопку «Отмена» (считаем макс. собранных колб за этап)
 let maxTubesThisStage = 0;
 const origGenForFix = generateLevel;
 generateLevel = function(lvl) {
@@ -350,12 +327,10 @@ generateLevel = function(lvl) {
     origGenForFix(lvl);
 };
 
-// Переопределяем проверку собранных колб без дыры через Undo
 onTubeClick = function(idx) {
     const prevSel = selectedTube;
     const movingColor = prevSel !== -1 && tubes.at(prevSel)?.length ? COLORS.at(tubes.at(prevSel).at(-1)) : null;
 
-    // Вызываем базовый клик из game.js напрямую (без двойных оберток)
     if (selectedTube === -1) {
         if (tubes[idx].length === 0) return;
         selectedTube = idx; playTone(440, 0.08); renderBoard(); return;
@@ -383,18 +358,14 @@ onTubeClick = function(idx) {
         if (movingColor) animateBallFlight(prevSel, idx, movingColor);
         gainExp(5);
 
-        // Награждаем ТОЛЬКО если побит рекорд собранных колб на текущем этапе (нельзя накрутить через Undo!)
         const nowDone = tubes.filter(t => t.length === TUBE_CAPACITY && t.every(c => c === t.at(0))).length;
         if (nowDone > maxTubesThisStage) {
             maxTubesThisStage = nowDone;
             extra.tubesCompleted++;
-            state.coins += 5;
-            saveProgress();
             saveExtra();
             renderBoard();
-            const andW = currentLang === 'en' ? 'and' : (currentLang === 'tr' ? 've' : 'и');
             const realExp = Math.round(15 * (1 + (prog.upgExp || 0) * 0.15));
-            showFloatText('✨ +$5 ' + andW + ' +' + realExp + ' EXP!', '#4ade80');
+            showFloatText('✨ +' + realExp + ' EXP!', '#4ade80');
             gainExp(15);
             updateAlertBadges();
         }
@@ -406,14 +377,13 @@ onTubeClick = function(idx) {
     }
 };
 
-// 2. Честный показ награды в окне победы (с учётом Титула и Катализатора) и выдача строго ПОСЛЕ рекламы
 checkWin = function() {
     const won = tubes.every(t => t.length === 0 || (t.length === TUBE_CAPACITY && t.every(c => c === t.at(0))));
     if (!won) return;
 
     const tObj = getActiveSpecialTitle();
     const totalMult = tObj.bonusMult + (prog.upgCoins || 0) * 0.1;
-    const totalReward = Math.round((BASE_WIN_REWARD + Math.floor(state.level * 5)) * totalMult);
+    const totalReward = Math.round((BASE_WIN_REWARD + Math.floor(state.level * 2)) * totalMult);
 
     document.getElementById('win-reward').textContent = '+$' + totalReward;
     document.getElementById('win-modal').style.display = 'flex';
@@ -426,7 +396,7 @@ checkWin = function() {
 claimWin = function(mult) {
     const tObj = getActiveSpecialTitle();
     const totalMult = tObj.bonusMult + (prog.upgCoins || 0) * 0.1;
-    const baseReward = Math.round((BASE_WIN_REWARD + Math.floor(state.level * 5)) * totalMult);
+    const baseReward = Math.round((BASE_WIN_REWARD + Math.floor(state.level * 2)) * totalMult);
     const lastMoves = movesCount;
 
     const finishLevel = () => {
@@ -434,7 +404,7 @@ claimWin = function(mult) {
         if (prog.winStreak > prog.bestStreak) prog.bestStreak = prog.winStreak;
         if (lastMoves <= 12) prog.fastWins++;
 
-        const streakBonus = prog.winStreak * 15;
+        const streakBonus = prog.winStreak * 5;
         state.coins += (baseReward * mult) + streakBonus;
         state.level++;
 
@@ -456,28 +426,21 @@ claimWin = function(mult) {
     else finishLevel();
 };
 
-// 3. Перевод «Подарка дня» на 3 языка (RU / EN / TR)
 openDaily = function() {
     closeModals();
     const today = new Date().toDateString();
     const ok = extra.lastDaily !== today;
-    const readyTxt = currentLang === 'en' ? 'Your daily gift is ready: +$150!' : (currentLang === 'tr' ? 'Günlük hediyen hazır: +$150!' : 'Ваш подарок дня готов: +$150!');
+    const readyTxt = currentLang === 'en' ? 'Your daily gift is ready: +$60!' : (currentLang === 'tr' ? 'Günlük hediyen hazır: +$60!' : 'Ваш подарок дня готов: +$60!');
     const waitTxt  = currentLang === 'en' ? 'Already claimed today! Come back tomorrow!' : (currentLang === 'tr' ? 'Bugün alındı! Yarın tekrar gel!' : 'Подарок сегодня уже получен! Заходите завтра!');
 
     document.getElementById('d-desc').textContent = ok ? readyTxt : waitTxt;
     document.getElementById('d-btns').innerHTML = ok
-        ? '<button class="action-btn btn-next modal-btn" onclick="claimDaily(1)">🎁 +$150</button><button class="action-btn btn-ad modal-btn" onclick="claimDaily(2)">📺 +$300 (x2)</button>'
+        ? '<button class="action-btn btn-next modal-btn" onclick="claimDaily(1)">🎁 +$60</button><button class="action-btn btn-ad modal-btn" onclick="claimDaily(2)">📺 +$120 (x2)</button>'
         : '';
     document.getElementById('daily-modal').style.display = 'flex';
 };
-
-// =========================================================================
-// === 1. УМНАЯ ПОДСКАЗКА ЗА РЕКЛАМУ (💡) ===
-// =========================================================================
-
 var hintPair = [];
 
-// Добавляем кнопку 💡 Подсказка (📺) в нижнюю панель управления при загрузке
 window.addEventListener('load', () => {
     var controls = document.querySelector('.controls');
     if (controls && !document.getElementById('hint-btn')) {
@@ -503,7 +466,6 @@ cycleLang = function() {
 
 var lastPlayerMove = [-1, -1];
 
-// Запоминаем последний ход игрока, чтобы подсказка никогда не гоняла шар туда-обратно
 var trackMoveOrigClick = onTubeClick;
 onTubeClick = function(idx) {
     var selBefore = selectedTube;
@@ -519,12 +481,10 @@ function findBestMove() {
     var bestScore = -999;
 
     for (var i = 0; i < tubes.length; i++) {
-        // Игнорируем замороженные колбы!
         if (typeof frozenTubes !== 'undefined' && frozenTubes.includes(i)) continue;
 
         var from = tubes.at(i);
         if (!from || from.length === 0) continue;
-        // Пропускаем уже полностью собранные колбы
         if (from.length === TUBE_CAPACITY && from.every(c => c === from.at(0))) continue;
 
         var topCol = from.at(-1);
@@ -534,32 +494,25 @@ function findBestMove() {
 
         for (var j = 0; j < tubes.length; j++) {
             if (i === j) continue;
-            // Нельзя ходить и в замороженную колбу!
             if (typeof frozenTubes !== 'undefined' && frozenTubes.includes(j)) continue;
 
             var to = tubes.at(j);
             if (!to || to.length >= TUBE_CAPACITY) continue;
             if (to.length > 0 && to.at(-1) !== topCol) continue;
 
-            // 1. Запрещаем бессмысленный перенос однородной стопки в пустую колбу
             if (to.length === 0 && isUniform) continue;
-
-            // 2. Запрещаем делить стопку на части, если целевая колба не вмещает её целиком
             if (to.length + sameRun > TUBE_CAPACITY) continue;
-
-            // 3. Не перекладываем из однородной колбы в другую однородную, если в первой шаров больше или столько же
             if (to.length > 0 && isUniform && to.every(c => c === topCol) && from.length > to.length) continue;
 
             var score = 0;
             if (to.length > 0) {
                 score += 60;
-                if (to.length + sameRun === TUBE_CAPACITY && to.every(c => c === topCol)) score += 120; // Закрываем колбу
-                if (!isUniform) score += 40; // Открываем новый цвет или знак ? снизу
+                if (to.length + sameRun === TUBE_CAPACITY && to.every(c => c === topCol)) score += 120;
+                if (!isUniform) score += 40;
             } else {
-                score += 15; // Перенос в пустую колбу только ради освобождения нижнего слоя
+                score += 15;
             }
 
-            // Штрафуем обратный ход [to -> from], чтобы никогда не зацикливаться
             if (lastPlayerMove.at(0) === j && lastPlayerMove.at(1) === i) {
                 score -= 200;
             }
@@ -572,6 +525,7 @@ function findBestMove() {
     }
     return bestMove;
 }
+
 function useHintAd() {
     var move = findBestMove();
     if (!move) {
@@ -588,11 +542,7 @@ function useHintAd() {
     });
 }
 
-// =========================================================================
-// === 2. БОСС-ЭТАПЫ С ТАЙНЫМИ КОЛБАМИ (?) КАЖДЫЕ 5 УРОВНЕЙ (НАГРАДА x2) ===
-// =========================================================================
-
-var revealedMask = []; // Хранит, какие ячейки на босс-этапе уже открыты
+var revealedMask = [];
 
 function isMysteryStage(lvl) {
     return lvl >= 5 && lvl % 5 === 0;
@@ -611,7 +561,6 @@ generateLevel = function(lvl) {
     }
 };
 
-// Сбрасываем подсветку подсказки после совершения хода
 var prevClickClearHint = onTubeClick;
 onTubeClick = function(idx) {
     var beforeMoves = movesCount;
@@ -619,28 +568,23 @@ onTubeClick = function(idx) {
     if (movesCount > beforeMoves) hintPair = [];
 };
 
-// Удваиваем награду за прохождение Тайного этапа (каждый 5-й уровень)
 var prevCheckWinMystery = checkWin;
 checkWin = function() {
     prevCheckWinMystery();
     var won = tubes.every(t => t.length === 0 || (t.length === TUBE_CAPACITY && t.every(c => c === t.at(0))));
     if (won && isMysteryStage(state.level)) {
         var rwEl = document.getElementById('win-reward');
-        var curVal = parseInt(rwEl.textContent.replace(/\D/g, ''), 10) || 50;
+        var curVal = parseInt(rwEl.textContent.replace(/\D/g, ''), 10) || 25;
         rwEl.textContent = '+$' + (curVal * 2) + ' (❓ x2!)';
     }
 };
-
-// =========================================================================
-// === 3. БОНУСНЫЙ СУНДУК ЗА КАЖДЫЕ 3 ПОБЕДЫ ПОДРЯД БЕЗ ОТМЕН (🔥 x3) ===
-// =========================================================================
 
 var prevClaimWinChest = claimWin;
 claimWin = function(mult) {
     var wasBoss = isMysteryStage(state.level);
     var tObj = getActiveSpecialTitle();
     var totalMult = tObj.bonusMult + (prog.upgCoins || 0) * 0.1;
-    var extraBossBonus = wasBoss ? Math.round((BASE_WIN_REWARD + Math.floor(state.level * 5)) * totalMult * mult) : 0;
+    var extraBossBonus = wasBoss ? Math.round((BASE_WIN_REWARD + Math.floor(state.level * 2)) * totalMult * mult) : 0;
 
     prevClaimWinChest(mult);
 
@@ -650,9 +594,8 @@ claimWin = function(mult) {
         renderBoard();
     }
 
-    // Уведомление о бонусе за текущую серию или сундук каждые 3 победы
-    if (prog.winStreak > 0 && prog.winStreak % 3 === 0) {
-        var chestCoins = 120 + prog.winStreak * 25;
+    if (prog.winStreak > 0 && prog.winStreak % 5 === 0) {
+        var chestCoins = 60 + prog.winStreak * 10;
         state.coins += chestCoins;
         extra.accExp += 60;
         saveProgress();
@@ -665,15 +608,13 @@ claimWin = function(mult) {
         setTimeout(() => showFloatText(chestMsg, '#fbbf24'), 800);
         playTone(820, 0.3);
     } else if (prog.winStreak >= 2) {
-        var streakBonus = prog.winStreak * 15;
+        var streakBonus = prog.winStreak * 5;
         var sMsg = currentLang === 'en'
             ? '🔥 Streak x' + prog.winStreak + ': +$' + streakBonus + ' bonus!'
             : (currentLang === 'tr' ? '🔥 Seri x' + prog.winStreak + ': +$' + streakBonus + ' bonus!' : '🔥 Серия x' + prog.winStreak + ': бонус +$' + streakBonus + '!');
         setTimeout(() => showFloatText(sMsg, '#fb923c'), 800);
     }
 };
-
-// Привязываем подсказку к конкретному номеру хода: светит пока movesCount не изменится
 var hintActiveAtMove = -1;
 
 var origUseHintAd = useHintAd;
@@ -686,7 +627,7 @@ useHintAd = function() {
     }
     showRewarded(() => {
         hintPair = move;
-        hintActiveAtMove = movesCount; // Запоминаем номер хода, на котором взята подсказка
+        hintActiveAtMove = movesCount;
         playTone(720, 0.2);
         renderBoard();
         var msg = currentLang === 'en' ? '💡 Move highlighted!' : (currentLang === 'tr' ? '💡 Hamle gösterildi!' : '💡 Ход подсвечен!');
@@ -706,10 +647,8 @@ renderBoard = function() {
             revealedMask[tIdx] = [true, true, true, true];
         }
 
-        // 1. Верхний шар в любой колбе всегда открыт
         if (tData.length > 0) {
             revealedMask[tIdx][tData.length - 1] = true;
-            // 2. Все шары того же цвета, идущие подряд от верха вниз, тоже открываются!
             var topColor = tData[tData.length - 1];
             for (var k = tData.length - 2; k >= 0; k--) {
                 if (tData[k] === topColor) revealedMask[tIdx][k] = true;
@@ -717,7 +656,6 @@ renderBoard = function() {
             }
         }
 
-        // 3. Если в колбе все шары одного цвета (например, переложили в пустую колбу) — открываем все
         if (tData.length > 0 && tData.every(c => c === tData[0])) {
             for (var m = 0; m < tData.length; m++) revealedMask[tIdx][m] = true;
         }
@@ -731,7 +669,6 @@ renderBoard = function() {
     });
 };
 
-// При отмене хода (Undo) не прячем обратно уже открытые слои и синхронизируем длину revealedMask
 var prevUndoMystery = undoMove;
 undoMove = function() {
     prevUndoMystery();
@@ -741,7 +678,6 @@ undoMove = function() {
     renderBoard();
 };
 
-// Железобетонный сброс подсветки подсказки сразу после любого хода
 var hintTrackedMoves = -1;
 var lastRenderWithHintReset = renderBoard;
 renderBoard = function() {
@@ -757,48 +693,18 @@ renderBoard = function() {
     lastRenderWithHintReset();
 };
 
-// =========================================================================
-// === 1. ЭЛИТНЫЕ ДОРОГИЕ СКИНЫ ($15 000 - $50 000) И ПРИЗЫ ИЗ КЕЙСОВ ===
-// =========================================================================
-
-if (typeof SHOP_DATA !== 'undefined') {
-    if (!SHOP_DATA.bg.some(x => x.id === 'blackhole')) {
-        SHOP_DATA.bg.push(
-            { id: 'blackhole', price: 25000, name: { ru: '🌌 Чёрная дыра (Элит)',   en: '🌌 Black Hole (Elite)',   tr: '🌌 Kara Delik (Elit)' } },
-            { id: 'olympus',   price: 50000, name: { ru: '👑 Золотой Олимп (Легенда)', en: '👑 Golden Olympus (Legend)', tr: '👑 Altın Olimpos (Efsane)' } }
-        );
-    }
-    if (!SHOP_DATA.tube.some(x => x.id === 'dragon')) {
-        SHOP_DATA.tube.push(
-            { id: 'dragon', price: 18000, name: { ru: '🐉 Драконий неон', en: '🐉 Dragon Neon', tr: '🐉 Ejderha Neon' } }
-        );
-    }
-    // Эксклюзивный скин шаров (выбивается только из кейсов!)
-    if (!SHOP_DATA.ball.some(x => x.id === 'relic')) {
-        SHOP_DATA.ball.push(
-            { id: 'relic', price: 999999, caseOnly: true, name: { ru: '💎 Реликвия (Из кейса)', en: '💎 Relic (Case Only)', tr: '💎 Kalıntı (Sandıktan)' } }
-        );
-    }
-}
-
-// =========================================================================
-// === 2. УСЛОЖНЕНИЕ ПОСЛЕ 15-ГО УРОВНЯ: ЛЕДЯНЫЕ КОЛБЫ (❄️) И 5 ШАРОВ ===
-// =========================================================================
-
-var frozenTubes = []; // Индексы колб под замком льда
+var frozenTubes = [];
 var extraTickets = JSON.parse(localStorage.getItem('sort_tickets_v1') || '{"hint":0,"tube":0}');
 function saveTickets() { localStorage.setItem('sort_tickets_v1', JSON.stringify(extraTickets)); }
 
 var prevGenEndgame = generateLevel;
 generateLevel = function(lvl) {
-    // С 25-го уровня каждый 5-й босс-этап имеет высоту 5 шаров в колбе!
     if (typeof TUBE_CAPACITY !== 'undefined') {
         TUBE_CAPACITY = (lvl >= 25 && lvl % 5 === 0) ? 5 : 4;
     }
 
     prevGenEndgame(lvl);
 
-    // С 15-го уровня замораживаем 1 колбу (с 30-го — 2 колбы), которые откроются при сборке других колб
     frozenTubes = [];
     if (lvl >= 15) {
         var freezeCount = lvl >= 30 ? 2 : 1;
@@ -822,7 +728,6 @@ generateLevel = function(lvl) {
     }
 };
 
-// Блокируем клик по замороженной колбе
 var prevClickFrozen = onTubeClick;
 onTubeClick = function(idx) {
     if (frozenTubes.includes(idx)) {
@@ -836,7 +741,6 @@ onTubeClick = function(idx) {
     prevClickFrozen(idx);
     var solvedAfter = tubes.filter(t => t.length === TUBE_CAPACITY && t.every(c => c === t[0])).length;
 
-    // Если игрок только что собрал колбу — размораживаем 1 ледяную колбу!
     if (solvedAfter > solvedBefore && frozenTubes.length > 0) {
         frozenTubes.shift();
         playTone(760, 0.25);
@@ -846,7 +750,6 @@ onTubeClick = function(idx) {
     }
 };
 
-// Отрисовка льда, высоты на 5 шаров и счётчика бесплатных билетов на кнопках
 var prevRenderEndgame = renderBoard;
 renderBoard = function() {
     prevRenderEndgame();
@@ -856,7 +759,6 @@ renderBoard = function() {
         if (typeof TUBE_CAPACITY !== 'undefined' && TUBE_CAPACITY === 5) el.classList.add('tall-tube');
     });
 
-    // Компактные бейджи бесплатных билетов из кейсов (помещаются в 1 строку при любом количестве!)
     var hBtn = document.getElementById('hint-btn');
     if (hBtn) {
         hBtn.innerHTML = extraTickets.hint > 0
@@ -870,8 +772,6 @@ renderBoard = function() {
             : '📺 +1 ' + (currentLang === 'en' ? 'Tube' : (currentLang === 'tr' ? 'Tüp' : 'Колба'));
     }
 };
-
-// Если есть билеты из кейсов — тратим билет вместо просмотра рекламы!
 var prevUseHintTickets = useHintAd;
 useHintAd = function() {
     if (extraTickets.hint > 0) {
@@ -904,10 +804,6 @@ addExtraTubeAd = function() {
     prevAddTubeTickets();
 };
 
-// =========================================================================
-// === 3. ВКЛАДКА «🎰 КЕЙСЫ» В МАГАЗИНЕ (КУДА ТРАТИТЬ ДЕСЯТКИ ТЫСЯЧ $) ===
-// =========================================================================
-
 window.addEventListener('load', () => {
     var tabsBox = document.querySelector('#shop-modal .shop-tabs');
     if (tabsBox && !document.getElementById('tab-cases-btn')) {
@@ -929,7 +825,6 @@ window.addEventListener('load', () => {
 function openCasesTab() {
     playTone(500, 0.08);
 
-    // Сохраняем блок вкладок сверху, чтобы он не пропадал при переключении!
     var list = document.getElementById('shop-list');
     var tabsEl = list ? list.querySelector('.shop-tabs, .tabs') : null;
     if (!tabsEl) {
@@ -947,19 +842,19 @@ function openCasesTab() {
             '<div style="text-align:left;">' +
                 '<div style="font-weight:800;font-size:14px;color:#fff;margin-bottom:3px;">📦 ' + (isEn ? 'Neon Supply Case' : 'Неоновый контейнер') + '</div>' +
                 '<div style="font-size:11px;color:#94a3b8;line-height:1.3;">' +
-                    (isEn ? 'Hint/Tube tickets, +150 EXP or $1,000–$5,000' : 'Билеты Подсказки/+1 Колбы, +150 EXP или $1 000–$5 000') +
+                    (isEn ? 'Hint/Tube tickets, +150 EXP or $1,500–$3,000' : 'Билеты Подсказки/+1 Колбы, +150 EXP или $1 500–$3 000') +
                 '</div>' +
             '</div>' +
-            '<button class="buy-btn" onclick="buyCase(2500, false)">$ 2 500</button>' +
+            '<button class="buy-btn" onclick="buyCase(4000, false)">$ 4 000</button>' +
         '</div>' +
         '<div class="shop-item" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.45);">' +
             '<div style="text-align:left;">' +
                 '<div style="font-weight:800;font-size:14px;color:#fbbf24;margin-bottom:3px;">👑 ' + (isEn ? 'VIP Relic Case' : 'VIP-кейс Реликвий') + '</div>' +
                 '<div style="font-size:11px;color:#fde68a;line-height:1.3;">' +
-                    (isEn ? '💎 Relic Skin, x3 Tickets, +500 EXP or $25,000!' : '💎 Скин «Реликвия», x3 билета, +500 EXP или $25 000!') +
+                    (isEn ? '💎 Relic Skin, x3 Tickets, +500 EXP or $20,000!' : '💎 Скин «Реликвия», x3 билета, +500 EXP или $20 000!') +
                 '</div>' +
             '</div>' +
-            '<button class="buy-btn" style="background:linear-gradient(135deg,#f59e0b,#ea580c) !important;" onclick="buyCase(10000, true)">$ 10 000</button>' +
+            '<button class="buy-btn" style="background:linear-gradient(135deg,#f59e0b,#ea580c) !important;" onclick="buyCase(15000, true)">$ 15 000</button>' +
         '</div>';
 
     if (list) {
@@ -971,6 +866,104 @@ function openCasesTab() {
             list.innerHTML = casesHtml;
         }
     }
+}
+
+showFloatText = function(text, color) {
+    var box = document.getElementById('canvas-container') || document.getElementById('game-wrapper');
+    if (!box) return;
+
+    var existing = box.querySelectorAll('.float-text');
+    if (existing.length >= 3 && existing[0]) {
+        existing[0].remove();
+        existing = box.querySelectorAll('.float-text');
+    }
+
+    var el = document.createElement('div');
+    el.className = 'float-text';
+    el.textContent = text;
+    el.style.color = color || '#fbbf24';
+    el.style.top = (96 + existing.length * 44) + 'px';
+    el.style.setProperty('top', (96 + existing.length * 44) + 'px', 'important');
+
+    box.appendChild(el);
+    setTimeout(() => { if (el.parentNode) el.remove(); }, 4200);
+};
+
+var prevHintWithStreakReset = useHintAd;
+useHintAd = function() {
+    var beforeHint = hintPair.length;
+    prevHintWithStreakReset();
+    setTimeout(() => {
+        if (hintPair.length > 0 && beforeHint === 0 && prog.winStreak > 0) {
+            prog.winStreak = 0;
+            saveProg();
+            if (typeof updateStreakUI === 'function') updateStreakUI();
+            var brkTxt = currentLang === 'en' ? '💔 Streak reset (Hint used)' : (currentLang === 'tr' ? '💔 Seri sıfırlandı (İpucu)' : '💔 Серия сброшена (использована подсказка)');
+            setTimeout(() => showFloatText(brkTxt, '#f87171'), 1600);
+        }
+    }, 50);
+};
+var origOpenShopCases = typeof openShop === 'function' ? openShop : null;
+if (origOpenShopCases) {
+    openShop = function() {
+        origOpenShopCases();
+        injectCasesTabButton();
+    };
+}
+
+function injectCasesTabButton() {
+    var modal = document.getElementById('shop-modal');
+    if (!modal || document.getElementById('tab-cases-btn')) return;
+
+    var existingTab = modal.querySelector('.tab-btn') || modal.querySelector('button[onclick*="switchShopTab"]') || modal.querySelector('button[onclick*="setShopTab"]');
+    var tabsContainer = existingTab ? existingTab.parentElement : modal.querySelector('.shop-tabs, .tabs');
+
+    if (tabsContainer) {
+        var cTitle = currentLang === 'en' ? '🎰 Cases' : (currentLang === 'tr' ? '🎰 Sandıklar' : '🎰 Кейсы');
+        var btn = document.createElement('button');
+        btn.id = 'tab-cases-btn';
+        btn.className = existingTab ? existingTab.className.replace('active', '').trim() : 'tab-btn';
+        btn.textContent = cTitle;
+        btn.onclick = openCasesTab;
+        tabsContainer.appendChild(btn);
+    }
+}
+
+document.addEventListener('click', function(e) {
+    if (e.target && (e.target.closest('[onclick*="openShop"]') || e.target.closest('#btn-shop'))) {
+        setTimeout(injectCasesTabButton, 30);
+    }
+});
+
+var prevRenderCompactCoins = renderBoard;
+renderBoard = function() {
+    prevRenderCompactCoins();
+    if (state.coins >= 100000) {
+        var shortVal = state.coins >= 1000000
+            ? (state.coins / 1000000).toFixed(2) + 'M'
+            : Math.floor(state.coins / 1000) + 'K';
+        var headerBox = document.querySelector('header, .header, .top-bar');
+        if (headerBox) {
+            headerBox.querySelectorAll('span, div, b').forEach(el => {
+                if (el.children.length === 0 && el.textContent.trim() === String(state.coins)) {
+                    el.textContent = shortVal;
+                }
+            });
+        }
+    }
+};
+
+if (!SKINS.some(s => s.id === 'relic')) {
+    SKINS.push({ id: 'relic', css: 'skin-relic', price: 999999, caseOnly: true, name: { ru: '💎 Реликвия (Из кейса)', en: '💎 Relic (Case Only)', tr: '💎 Kalıntı (Sandıktan)' } });
+}
+if (!TUBE_SKINS.some(t => t.id === 'dragon')) {
+    TUBE_SKINS.push({ id: 'dragon', css: 'tube-dragon', price: 18000, isAd: false, name: { ru: '🐉 Драконий неон', en: '🐉 Dragon Neon', tr: '🐉 Ejderha Neon' } });
+}
+if (!THEMES.some(th => th.id === 'blackhole')) {
+    THEMES.push(
+        { id: 'blackhole', price: 25000, isAd: false, bg: 'radial-gradient(circle at 50% 35%, #311042 0%, #090514 55%, #000000 100%)', dot: '#c084fc', name: { ru: '🌌 Чёрная дыра (Элит)', en: '🌌 Black Hole (Elite)', tr: '🌌 Kara Delik (Elit)' } },
+        { id: 'olympus',   price: 50000, isAd: false, bg: 'radial-gradient(circle at 50% 20%, #451a03 0%, #1c1917 60%, #090d16 100%)', dot: '#fbbf24', name: { ru: '👑 Золотой Олимп (Легенда)', en: '👑 Golden Olympus (Legend)', tr: '👑 Altın Olimpos (Efsane)' } }
+    );
 }
 
 function buyCase(cost, isVip) {
@@ -990,203 +983,11 @@ function buyCase(cost, isVip) {
             extraTickets.tube += 1; saveTickets();
             prizeText = '🎟️ +1 Билет «+1 Колба»!';
         } else if (r < 0.88) {
-            if (typeof updateExpUI === 'function') updateExpUI();
-            prizeText = '⭐ +150 Опыта аккаунта!';
-        } else {
-            state.coins += 5000;
-            prizeText = '💰 Удача! Выпало $5 000!';
-        }
-    } else {
-        if (r < 0.25 && !prog.unlocked.ball.includes('relic')) {
-            prog.unlocked.ball.push('relic');
-            prog.equipped.ball = 'relic';
-            saveProg();
-            prizeText = '💎 ЛЕГЕНДАРКА! Скин «Реликвия»!';
-        } else if (r < 0.55) {
-            extraTickets.hint += 3; extraTickets.tube += 2; saveTickets();
-            prizeText = '🎟️ Набор VIP: +3 Подсказки и +2 Колбы!';
-        } else if (r < 0.82) {
-            if (typeof updateExpUI === 'function') updateExpUI();
-            prizeText = '⭐ +500 Опыта аккаунта!';
-        } else {
-            state.coins += 25000;
-            prizeText = '👑 ДЖЕКПОТ! +$25 000!';
-        }
-    }
-
-    saveProgress();
-    renderBoard();
-    playTone(840, 0.3);
-    showFloatText(prizeText, '#fbbf24');
-}
-
-// =========================================================================
-// === ДОЛГИЕ УВЕДОМЛЕНИЯ (3.2 СЕК) + СБРОС СЕРИИ ПРИ ПОДСКАЗКЕ ===
-// =========================================================================
-
-// Продлеваем жизнь всплывающей плашки до 3.2 секунд, чтобы текст спокойно читался
-showFloatText = function(text, color) {
-    var box = document.getElementById('canvas-container') || document.getElementById('game-wrapper');
-    if (!box) return;
-
-    var existing = box.querySelectorAll('.float-text');
-    // Если на экране уже висит больше 2 плашек одновременно — убираем самую верхнюю (старую)
-    if (existing.length >= 3 && existing[0]) {
-        existing[0].remove();
-        existing = box.querySelectorAll('.float-text');
-    }
-
-    var el = document.createElement('div');
-    el.className = 'float-text';
-    el.textContent = text;
-    el.style.color = color || '#fbbf24';
-    // Сдвигаем каждую следующую одновременную плашку на 44px ниже предыдущей
-    el.style.top = (96 + existing.length * 44) + 'px';
-    el.style.setProperty('top', (96 + existing.length * 44) + 'px', 'important');
-
-    box.appendChild(el);
-    setTimeout(() => { if (el.parentNode) el.remove(); }, 4200);
-};
-
-// Сбрасываем серию побед при использовании подсказки (как и при отмене/рестарте)
-var prevHintWithStreakReset = useHintAd;
-useHintAd = function() {
-    var beforeHint = hintPair.length;
-    prevHintWithStreakReset();
-    // Проверяем через 50 мс: если подсказка сработала (появилась подсветка), обнуляем серию
-    setTimeout(() => {
-        if (hintPair.length > 0 && beforeHint === 0 && prog.winStreak > 0) {
-            prog.winStreak = 0;
-            saveProg();
-            if (typeof updateStreakUI === 'function') updateStreakUI();
-            var brkTxt = currentLang === 'en' ? '💔 Streak reset (Hint used)' : (currentLang === 'tr' ? '💔 Seri sıfırlandı (İpucu)' : '💔 Серия сброшена (использована подсказка)');
-            setTimeout(() => showFloatText(brkTxt, '#f87171'), 1600);
-        }
-    }, 50);
-};
-
-// =========================================================================
-// === ГАРАНТИРОВАННАЯ ВКЛАДКА «🎰 КЕЙСЫ» И УВЕДОМЛЕНИЕ О НОВОМ РАНГЕ ===
-// =========================================================================
-
-// 1. Встраиваем вкладку «🎰 Кейсы» при каждом открытии магазина (находим панель вкладок автоматически)
-var origOpenShopCases = typeof openShop === 'function' ? openShop : null;
-if (origOpenShopCases) {
-    openShop = function() {
-        origOpenShopCases();
-        injectCasesTabButton();
-    };
-}
-
-function injectCasesTabButton() {
-    var modal = document.getElementById('shop-modal');
-    if (!modal || document.getElementById('tab-cases-btn')) return;
-
-    // Ищем контейнер с кнопками вкладок (Фоны / Колбы / Элементы)
-    var existingTab = modal.querySelector('.tab-btn') || modal.querySelector('button[onclick*="switchShopTab"]') || modal.querySelector('button[onclick*="setShopTab"]');
-    var tabsContainer = existingTab ? existingTab.parentElement : modal.querySelector('.shop-tabs, .tabs');
-
-    if (tabsContainer) {
-        var cTitle = currentLang === 'en' ? '🎰 Cases' : (currentLang === 'tr' ? '🎰 Sandıklar' : '🎰 Кейсы');
-        var btn = document.createElement('button');
-        btn.id = 'tab-cases-btn';
-        btn.className = existingTab ? existingTab.className.replace('active', '').trim() : 'tab-btn';
-        btn.textContent = cTitle;
-        btn.onclick = openCasesTab;
-        tabsContainer.appendChild(btn);
-    }
-}
-
-// Также вешаем проверку на клик по любой кнопке открытия магазина в шапке
-document.addEventListener('click', function(e) {
-    if (e.target && (e.target.closest('[onclick*="openShop"]') || e.target.closest('#btn-shop'))) {
-        setTimeout(injectCasesTabButton, 30);
-    }
-});
-
-// 2. Яркое уведомление при каждом повышении ранга аккаунта
-var lastKnownAccRank = (typeof extra !== 'undefined' && extra.accRank) ? extra.accRank : 1;
-
-var origClaimWinRank = claimWin;
-claimWin = function(mult) {
-    var rankBefore = (typeof extra !== 'undefined' && extra.accRank) ? extra.accRank : lastKnownAccRank;
-    origClaimWinRank(mult);
-    var rankAfter = (typeof extra !== 'undefined' && extra.accRank) ? extra.accRank : rankBefore;
-
-    if (rankAfter > rankBefore) {
-        lastKnownAccRank = rankAfter;
-        var rankReward = rankAfter * 100;
-        state.coins += rankReward;
-        saveProgress();
-        renderBoard();
-        var rMsg = currentLang === 'en'
-            ? '⭐ NEW RANK ' + rankAfter + '! +$' + rankReward + '!'
-            : (currentLang === 'tr' ? '⭐ YENİ RÜTBE ' + rankAfter + '! +$' + rankReward + '!' : '⭐ НОВЫЙ РАНГ ' + rankAfter + '! Награда +$' + rankReward + '!');
-        setTimeout(() => showFloatText(rMsg, '#c084fc'), 350);
-        playTone(880, 0.35);
-    }
-};
-
-// Компактное отображение баланса >= 100 000 в шапке (например, 9.32M), чтобы кнопки не уезжали за край
-var prevRenderCompactCoins = renderBoard;
-renderBoard = function() {
-    prevRenderCompactCoins();
-    if (state.coins >= 100000) {
-        var shortVal = state.coins >= 1000000
-            ? (state.coins / 1000000).toFixed(2) + 'M'
-            : Math.floor(state.coins / 1000) + 'K';
-        var headerBox = document.querySelector('header, .header, .top-bar');
-        if (headerBox) {
-            headerBox.querySelectorAll('span, div, b').forEach(el => {
-                if (el.children.length === 0 && el.textContent.trim() === String(state.coins)) {
-                    el.textContent = shortVal;
-                }
-            });
-        }
-    }
-};
-
-// =========================================================================
-// === ФИНАЛЬНЫЙ ПАТЧ: ИСПРАВЛЕНИЕ КЕЙСОВ, ЭЛИТНЫХ СКИНОВ, РАНГА И UNDO ===
-// =========================================================================
-
-// 1. Добавляем элитные скины и «Реликвию» в реальные массивы магазина (SKINS, TUBE_SKINS, THEMES)
-if (!SKINS.some(s => s.id === 'relic')) {
-    SKINS.push({ id: 'relic', css: 'skin-relic', price: 999999, caseOnly: true, name: { ru: '💎 Реликвия (Из кейса)', en: '💎 Relic (Case Only)', tr: '💎 Kalıntı (Sandıktan)' } });
-}
-if (!TUBE_SKINS.some(t => t.id === 'dragon')) {
-    TUBE_SKINS.push({ id: 'dragon', css: 'tube-dragon', price: 18000, isAd: false, name: { ru: '🐉 Драконий неон', en: '🐉 Dragon Neon', tr: '🐉 Ejderha Neon' } });
-}
-if (!THEMES.some(th => th.id === 'blackhole')) {
-    THEMES.push(
-        { id: 'blackhole', price: 25000, isAd: false, bg: 'radial-gradient(circle at 50% 35%, #311042 0%, #090514 55%, #000000 100%)', dot: '#c084fc', name: { ru: '🌌 Чёрная дыра (Элит)', en: '🌌 Black Hole (Elite)', tr: '🌌 Kara Delik (Elit)' } },
-        { id: 'olympus',   price: 50000, isAd: false, bg: 'radial-gradient(circle at 50% 20%, #451a03 0%, #1c1917 60%, #090d16 100%)', dot: '#fbbf24', name: { ru: '👑 Золотой Олимп (Легенда)', en: '👑 Golden Olympus (Legend)', tr: '👑 Altın Olimpos (Efsane)' } }
-    );
-}
-
-// 2. Переопределяем buyCase без багов с несуществующим SHOP_DATA и с реальным начислением EXP
-buyCase = function(cost, isVip) {
-    if (state.coins < cost) {
-        showFloatText(currentLang === 'en' ? 'Not enough coins!' : 'Не хватает монет!', '#f87171');
-        return;
-    }
-    state.coins -= cost;
-    var r = Math.random();
-    var prizeText = '';
-
-    if (!isVip) {
-        if (r < 0.35) {
-            extraTickets.hint += 2; saveTickets();
-            prizeText = '🎟️ +2 Билета Подсказки!';
-        } else if (r < 0.65) {
-            extraTickets.tube += 1; saveTickets();
-            prizeText = '🎟️ +1 Билет «+1 Колба»!';
-        } else if (r < 0.88) {
             gainExp(150);
             prizeText = '⭐ +150 Опыта Ранга!';
         } else {
-            state.coins += 5000;
-            prizeText = '💰 Удача! Выпало $5 000!';
+            state.coins += 3000;
+            prizeText = '💰 Удача! Выпало $3 000!';
         }
     } else {
         if (r < 0.25 && !state.unlockedSkins.includes('relic')) {
@@ -1200,8 +1001,8 @@ buyCase = function(cost, isVip) {
             gainExp(500);
             prizeText = '⭐ +500 Опыта Ранга!';
         } else {
-            state.coins += 25000;
-            prizeText = '👑 ДЖЕКПОТ! +$25 000!';
+            state.coins += 20000;
+            prizeText = '👑 ДЖЕКПОТ! +$20 000!';
         }
     }
 
@@ -1210,9 +1011,8 @@ buyCase = function(cost, isVip) {
     updateAlertBadges();
     playTone(840, 0.3);
     showFloatText(prizeText, '#fbbf24');
-};
+}
 
-// 3. Корректное уведомление о новом Ранге (привязано к реальному extra.accLvl)
 var prevGainExpNotice = gainExp;
 gainExp = function(pts) {
     var beforeLvl = extra.accLvl;
@@ -1225,11 +1025,9 @@ gainExp = function(pts) {
     }
 };
 
-// 4. Защита от бесплатного подглядывания тайных шаров (?) на босс-этапах через «Интуицию отмены»
 var prevUndoBossGuard = undoMove;
 undoMove = function() {
     if (isMysteryStage(state.level)) {
-        // На тайных этапах бесплатная интуиция не срабатывает — тратится $20 или реклама
         if (historyStack.length === 0) return;
         prog.winStreak = 0; saveProg(); updateStreakUI();
         prevUndoForProg();
@@ -1240,7 +1038,6 @@ undoMove = function() {
     prevUndoBossGuard();
 };
 
-// Всегда показываем понятные названия «Подсказка» и «+1 Колба», а билеты — бейджем в углу кнопки
 var prevRenderClearLabels = renderBoard;
 renderBoard = function() {
     prevRenderClearLabels();
@@ -1261,10 +1058,6 @@ renderBoard = function() {
             : '📺 ' + tText;
     }
 };
-
-// =========================================================================
-// === ФОНТАН НЕОНОВЫХ ИСКР ПРИ ПОЛНОЙ СБОРКЕ КОЛБЫ ===
-// =========================================================================
 
 function spawnTubeConfetti(tubeIdx, colorHex) {
     var board = document.getElementById('board-area');
@@ -1316,18 +1109,14 @@ onTubeClick = function(idx) {
     });
 };
 
-// =========================================================================
-// === ЮБИЛЕЙНЫЕ РУБЕЖИ: 50+ (11 КОЛБ), 75+ (12 КОЛБ), 100+ (13 КОЛБ) ===
-// =========================================================================
-
 var prevGenMilestones = generateLevel;
 generateLevel = function(lvl) {
     prevGenMilestones(lvl);
 
     var bonusColors = 0;
-    if (lvl >= 100) bonusColors = 3;      // 11 цветов + 2 пустые = 13 колб навсегда с 100 этапа
-    else if (lvl >= 75) bonusColors = 2;  // 10 цветов + 2 пустые = 12 колб с 75 по 99 этап
-    else if (lvl >= 50) bonusColors = 1;  // 9 цветов + 2 пустые = 11 колб с 50 по 74 этап
+    if (lvl >= 100) bonusColors = 3;
+    else if (lvl >= 75) bonusColors = 2;
+    else if (lvl >= 50) bonusColors = 1;
 
     if (bonusColors > 0) {
         var existingPool = [];
@@ -1387,7 +1176,6 @@ renderBoard = function() {
     }
 };
 
-// Железобетонная страховка срабатывания победы после любого хода
 var prevClickWinGuard = onTubeClick;
 onTubeClick = function(idx) {
     prevClickWinGuard(idx);
@@ -1403,9 +1191,3 @@ onTubeClick = function(idx) {
         }
     }, 260);
 };
-
-
-
-
-
-// state.level = 25; generateLevel(25);

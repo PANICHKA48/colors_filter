@@ -3,10 +3,10 @@
 // =========================================================================
 
 let TUBE_CAPACITY = 4;       // Сколько шариков помещается в одну колбу (стандарт = 4)
-const BASE_WIN_REWARD = 40;    // Базовая награда монет за прохождение уровня
+const BASE_WIN_REWARD = 20;    // Базовая награда монет за прохождение уровня
 const UNDO_COST = 20;          // Цена отмены 1 хода в монетах
 
-// Палитра ярких неоновых цветов дл я шариков (всего 9 цветов для высоких уровней)
+// Палитра ярких неоновых цветов для шариков (всего 11 цветов для высоких уровней)
 const COLORS = [
     '#ef4444', // 0: Красный
     '#3b82f6', // 1: Синий
@@ -17,15 +17,15 @@ const COLORS = [
     '#06b6d4', // 6: Голубой
     '#f97316', // 7: Оранжевый
     '#84cc16', // 8: Лаймовый
-    '#f8fafc', // 9: Жемчужно-белый (для 50+ этапов — невозможно спутать ни с чем!)
-    '#b45309'  // 10: Бронзово-янтарный (для 75+ этапов — чётко отличается от всех!)
+    '#f8fafc', // 9: Жемчужно-белый (для 50+ этапов)
+    '#b45309'  // 10: Бронзово-янтарный (для 75+ этапов)
 ];
 
 // Ассортимент магазина форм (меняет внешний вид элементов в колбах)
 const SKINS = [
-    { id: 'ball', css: '',          price: 0,   name: { ru: 'Неоновые шары', en: 'Neon Orbs', tr: 'Neon Küreler' } },
-    { id: 'gem',  css: 'skin-gem',  price: 200, name: { ru: 'Кристаллы',     en: 'Crystals',  tr: 'Kristaller' } },
-    { id: 'pill', css: 'skin-pill', price: 500, name: { ru: 'Энерго-блоки',  en: 'Energy Cells', tr: 'Enerji Blokları' } }
+    { id: 'ball', css: '',          price: 0,    name: { ru: 'Неоновые шары', en: 'Neon Orbs',    tr: 'Neon Küreler' } },
+    { id: 'gem',  css: 'skin-gem',  price: 250,  name: { ru: 'Кристаллы',     en: 'Crystals',     tr: 'Kristaller' } },
+    { id: 'pill', css: 'skin-pill', price: 1800, name: { ru: 'Энерго-блоки',  en: 'Energy Cells', tr: 'Enerji Blokları' } }
 ];
 
 // Словарь переводов интерфейса на 3 языка (Русский, Английский, Турецкий)
@@ -56,13 +56,12 @@ const I18N = {
 
 let state = {
     level: 1,                  // Текущий уровень игрока
-    coins: 60,                 // Стартовый баланс монет (хватит на 3 отмены хода)
+    coins: 20,                 // Стартовый баланс монет (хватит на 1 отмену хода)
     unlockedSkins: ['ball'],   // Купленные формы
     activeSkin: 'ball',        // Текущая выбранная форма
     sound: true                // Включён ли звук
 };
 
-// Загружаем сохранённый прогресс из памяти браузера
 try {
     const saved = JSON.parse(localStorage.getItem('panichka_sort_save'));
     if (saved) state = { ...state, ...saved };
@@ -75,7 +74,6 @@ function saveProgress() {
 let currentLang = 'ru';
 function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || I18N.ru[key] || key; }
 
-// Простой встроенный генератор звуков (не требует mp3-файлов)
 let audioCtx = null, isPaused = false;
 function playTone(freq, dur = 0.1) {
     if (!state.sound || isPaused) return;
@@ -99,39 +97,33 @@ function playTone(freq, dur = 0.1) {
 // === 3. ГЕНЕРАТОР УРОВНЕЙ И ИГРОВАЯ ЛОГИКА ===
 // =========================================================================
 
-let tubes = [];          // Массив колб (каждая колба — массив индексов цвета снизу вверх)
-let initialTubes = [];   // Копия начального расклада для кнопки «Заново»
-let historyStack = [];   // История ходов для кнопки «Отмена»
-let selectedTube = -1;   // Индекс выбранной колбы (-1 = ни одна не выбрана)
-let movesCount = 0;      // Счётчик сделанных ходов на текущем уровне
-let extraTubeUsed = false; // Использовал ли игрок бустер «+1 Колба» на этом уровне
+let tubes = [];
+let initialTubes = [];
+let historyStack = [];
+let selectedTube = -1;
+let movesCount = 0;
+let extraTubeUsed = false;
 
-// Генерация нового уровня в зависимости от номера (state.level)
 function generateLevel(lvl) {
-    // На 1 уровне — 3 цвета, дальше плавно растёт до 8 цветов
     const numColors = Math.min(8, 3 + Math.floor((lvl - 1) / 3));
-    const emptyTubes = 2; // Всегда даём 2 пустые колбы для перекладывания
+    const emptyTubes = 2;
 
-    // Создаём пул всех шариков (по 4 штуки каждого цвета)
     let pool = [];
     for (let c = 0; c < numColors; c++) {
         for (let k = 0; k < TUBE_CAPACITY; k++) pool.push(c);
     }
 
-    // Перемешиваем шарики случайным образом (алгоритм Фишера-Йетса)
     for (let i = pool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [pool[i], pool[j]] = [pool[j], pool[i]];
     }
 
-    // Раскладываем перемешанные шарики по заполненным колбам + добавляем 2 пустые
     tubes = [];
     for (let tIdx = 0; tIdx < numColors; tIdx++) {
         tubes.push(pool.slice(tIdx * TUBE_CAPACITY, (tIdx + 1) * TUBE_CAPACITY));
     }
     for (let e = 0; e < emptyTubes; e++) tubes.push([]);
 
-    // Сохраняем копию уровня на случай перезапуска
     initialTubes = JSON.parse(JSON.stringify(tubes));
     historyStack = [];
     selectedTube = -1;
@@ -148,31 +140,25 @@ function generateLevel(lvl) {
 // === 4. ОТРИСОВКА КОЛБ, ОБРАБОТКА НАЖАТИЙ И ПРОВЕРКА ПОБЕДЫ ===
 // =========================================================================
 
-// Отрисовка всех колб и шариков на экране
 function renderBoard() {
     const container = document.getElementById('tubes-container');
     if (!container) return;
 
-    // Обновляем цифры уровня, ходов и монет в верхней панели
     document.getElementById('level-display').textContent = state.level;
     document.getElementById('moves-display').textContent = movesCount;
     document.getElementById('coins-display').textContent = state.coins;
 
-    // Подбираем размер колб в зависимости от их количества (чтобы всё влезало в экран)
     const isMany = tubes.length > 6;
     const tubeWidth = isMany ? '46px' : '52px';
     const tubeHeight = isMany ? '164px' : '184px';
     const ballSize = isMany ? '33px' : '38px';
 
-    // Находим CSS-класс текущей выбранной формы из магазина
     const skinObj = SKINS.find(s => s.id === state.activeSkin) || SKINS;
 
     container.innerHTML = tubes.map((tube, idx) => {
-        // Проверяем, собрана ли колба целиком (4 шарика одного цвета)
         const isDone = tube.length === TUBE_CAPACITY && tube.every(c => c === tube.at(0));
         const isSelected = idx === selectedTube;
 
-        // Генерируем HTML для каждого шарика внутри колбы
         const ballsHtml = tube.map(colorIdx =>
             `<div class="ball ${skinObj.css}" style="width:${ballSize};height:${ballSize};background:${COLORS[colorIdx]};"></div>`
         ).join('');
@@ -185,9 +171,7 @@ function renderBoard() {
     }).join('');
 }
 
-// Обработка клика по колбе с номером idx
 function onTubeClick(idx) {
-    // 1. Если ещё ни одна колба не выбрана — выбираем эту (если она не пустая)
     if (selectedTube === -1) {
         if (tubes[idx].length === 0) return;
         selectedTube = idx;
@@ -196,7 +180,6 @@ function onTubeClick(idx) {
         return;
     }
 
-    // 2. Если нажали на ту же самую колбу — снимаем выделение
     if (selectedTube === idx) {
         selectedTube = -1;
         playTone(320, 0.08);
@@ -204,22 +187,18 @@ function onTubeClick(idx) {
         return;
     }
 
-    // 3. Пытаемся переложить верхний шарик (или серию одинаковых) из selectedTube в idx
     const from = tubes[selectedTube];
     const to = tubes[idx];
     const topColor = from[from.length - 1];
 
-    // Проверяем правила: в целевой колбе должно быть место, и верхний шарик там либо такой же, либо колба пустая
     const canMove = to.length < TUBE_CAPACITY && (to.length === 0 || to[to.length - 1] === topColor);
 
     if (canMove) {
-        // Сохраняем текущее состояние в историю для кнопки «Отмена»
         historyStack.push({
             tubes: JSON.parse(JSON.stringify(tubes)),
             moves: movesCount
         });
 
-        // Перекладываем все подряд идущие верхние шарики одного цвета, пока хватает места
         while (from.length > 0 && from[from.length - 1] === topColor && to.length < TUBE_CAPACITY) {
             to.push(from.pop());
         }
@@ -230,42 +209,36 @@ function onTubeClick(idx) {
         renderBoard();
         checkWin();
     } else {
-        // Если ход невозможен — переключаем выделение на новую колбу (если она не пустая)
         selectedTube = tubes[idx].length > 0 ? idx : -1;
         playTone(220, 0.1);
         renderBoard();
     }
 }
 
-// Проверка победы: все непустые колбы должны содержать по 4 шарика одного цвета
 function checkWin() {
     const won = tubes.every(t => t.length === 0 || (t.length === TUBE_CAPACITY && t.every(c => c === t.at(0))));
     if (!won) return;
 
-    // Считаем награду за уровень (чем выше уровень, тем чуть больше монет)
-    const reward = BASE_WIN_REWARD + Math.floor(state.level * 5);
+    const reward = BASE_WIN_REWARD + Math.floor(state.level * 2);
     document.getElementById('win-reward').textContent = `+$${reward}`;
     document.getElementById('win-modal').style.display = 'flex';
     playTone(760, 0.25);
 
-    // Сообщаем Яндекс SDK, что активный геймплей приостановлен на время окна победы
     if (ysdk?.features?.GameplayAPI) {
         try { ysdk.features.GameplayAPI.stop(); } catch (e) {}
     }
 }
 
-// Забрать награду (mult = 1 обычно, mult = 2 за просмотр рекламы) и перейти на следующий уровень
 function claimWin(mult) {
-    const reward = (BASE_WIN_REWARD + Math.floor(state.level * 5)) * mult;
+    const reward = (BASE_WIN_REWARD + Math.floor(state.level * 2)) * mult;
     const proceed = () => {
         state.coins += reward;
         state.level++;
         saveProgress();
-        submitScoreToLb(state.level); // Отправляем новый уровень в таблицу лидеров
+        submitScoreToLb(state.level);
         closeModals();
         generateLevel(state.level);
 
-        // Показываем обычную межстраничную рекламу каждые 3 пройденных уровня (если не смотрели x2)
         if (mult === 1 && state.level % 3 === 0) showInterstitial();
     };
 
@@ -280,7 +253,6 @@ function claimWin(mult) {
 function undoMove() {
     if (historyStack.length === 0) return;
     if (state.coins < UNDO_COST) {
-        // Если монет не хватает — предлагаем отменить ход бесплатно за просмотр рекламы!
         showRewarded(() => {
             const prev = historyStack.pop();
             tubes = prev.tubes;
@@ -305,8 +277,8 @@ function addExtraTubeAd() {
     if (extraTubeUsed) return;
     showRewarded(() => {
         extraTubeUsed = true;
-        tubes.push([]); // Добавляем одну пустую вспомогательную колбу
-        historyStack.forEach(item => item.tubes.push([])); // Сохраняем бонусную колбу в истории ходов
+        tubes.push([]);
+        historyStack.forEach(item => item.tubes.push([]));
         document.getElementById('add-tube-btn').disabled = true;
         playTone(660, 0.2);
         renderBoard();
