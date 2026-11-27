@@ -1351,4 +1351,15 @@ claimDaily = function(mult) {
     if (mult > 1) showRewarded(give);
     else give();
 };
+// =========================================================================
+// === ЖЕЛЕЗОБЕТОННЫЙ ФИЛЬТР УВЕДОМЛЕНИЯ О ЛЬДЕ (ПО РЕАЛЬНОЙ ДОСКЕ) ===
+// =========================================================================
+const finalFloatGuard = showFloatText;
+showFloatText = function(text, color) {
+    if (typeof text === 'string' && (text.includes('ЛЕДЯНЫЕ КОЛБЫ') || text.includes('FROZEN TUBES') || text.includes('DONMUŞ TÜPLER'))) {
+        const hasRealIceOnScreen = document.querySelectorAll('#tubes-container .frozen-tube').length > 0;
+        if (!hasRealIceOnScreen) return;
+    }
+    return finalFloatGuard.apply(this, arguments);
+};
 
