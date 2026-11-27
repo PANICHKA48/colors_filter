@@ -720,12 +720,6 @@ generateLevel = function(lvl) {
 
     renderBoard();
 
-    if (frozenTubes.length > 0) {
-        var fMsg = currentLang === 'en'
-            ? '❄️ FROZEN TUBES! Complete any tube to thaw!'
-            : (currentLang === 'tr' ? '❄️ DONMUŞ TÜPLER! Çözmek için bir tüp tamamla!' : '❄️ ЛЕДЯНЫЕ КОЛБЫ! Собери любую колбу, чтобы разморозить!');
-        setTimeout(() => showFloatText(fMsg, '#7dd3fc'), 550);
-    }
 };
 
 var prevClickFrozen = onTubeClick;
