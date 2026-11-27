@@ -637,21 +637,32 @@ claimWin = function(mult) {
     }, 100);
 };
 
-const prevShopEquipForExp = shopEquip;
-let lastKnownOwnedCount = 0;
-shopEquip = function(cat, id) {
-    const nowOwned = (state.unlockedSkins?.length || 0) + (extra.unlockedTubes?.length || 0) + (extra.unlockedThemes?.length || 0);
-    prevShopEquipForExp(cat, id);
-    if (nowOwned > lastKnownOwnedCount && lastKnownOwnedCount > 0) {
+const prevShopBuyForExp = shopBuy;
+shopBuy = function(cat, id) {
+    const beforeOwned = (state.unlockedSkins?.length || 0) + (extra.unlockedTubes?.length || 0) + (extra.unlockedThemes?.length || 0);
+    prevShopBuyForExp(cat, id);
+    const afterOwned = (state.unlockedSkins?.length || 0) + (extra.unlockedTubes?.length || 0) + (extra.unlockedThemes?.length || 0);
+    if (afterOwned > beforeOwned) {
         gainExp(120);
         showFloatText('🎨 +120 EXP!', '#38bdf8');
         updateAlertBadges();
     }
-    lastKnownOwnedCount = nowOwned;
 };
-setTimeout(() => {
-    lastKnownOwnedCount = (state.unlockedSkins?.length || 0) + (extra.unlockedTubes?.length || 0) + (extra.unlockedThemes?.length || 0);
-}, 300);
+
+const prevShopAdForExp = shopAdUnlock;
+shopAdUnlock = function(cat, id) {
+    const beforeOwned = (state.unlockedSkins?.length || 0) + (extra.unlockedTubes?.length || 0) + (extra.unlockedThemes?.length || 0);
+    prevShopAdForExp(cat, id);
+    setTimeout(() => {
+        const afterOwned = (state.unlockedSkins?.length || 0) + (extra.unlockedTubes?.length || 0) + (extra.unlockedThemes?.length || 0);
+        if (afterOwned > beforeOwned) {
+            gainExp(120);
+            showFloatText('🎨 +120 EXP!', '#38bdf8');
+            updateAlertBadges();
+        }
+    }, 100);
+};
+
 
 const prevShowRewardedForExp = showRewarded;
 showRewarded = function(onSuccess) {

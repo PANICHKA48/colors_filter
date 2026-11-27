@@ -421,7 +421,10 @@ function showInterstitial() {
 }
 
 function showRewarded(onSuccess) {
-    if (!ysdk?.adv) { onSuccess(); return; }
+    if (!ysdk?.adv) {
+        if (typeof showFloatText === 'function') showFloatText('⏳ Реклама пока недоступна', '#94a3b8');
+        return;
+    }
     isPaused = true;
     ysdk.adv.showRewardedVideo({
         callbacks: {

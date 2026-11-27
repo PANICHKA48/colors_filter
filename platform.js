@@ -211,26 +211,19 @@ function shareGameWithFriends(withBonus) {
         if (withBonus && PlatformSDK.lastShareBonusDay !== today && typeof state !== 'undefined') {
             PlatformSDK.lastShareBonusDay = today;
             localStorage.setItem('vk_share_bonus_day', today);
-            state.coins += 10000;
-            state.level = (state.level || 1) + 5;
-            state.bestScore = Math.max(state.bestScore || 1, state.level);
-            if (typeof extra !== 'undefined') {
-                extra.accLvl = (extra.accLvl || 1) + 5;
-                if (typeof saveExtra === 'function') saveExtra();
+            state.coins += 500;
+            if (typeof extraTickets !== 'undefined') {
+                extraTickets.hint += 1;
+                if (typeof saveTickets === 'function') saveTickets();
             }
             if (typeof saveProgress === 'function') saveProgress();
-            if (typeof updateExpBar === 'function') updateExpBar();
-            if (typeof refreshTitleBadge === 'function') refreshTitleBadge();
             if (typeof renderBoard === 'function') renderBoard();
-            if (typeof showFloatText === 'function') showFloatText('👥 Репост: +$10 000 и +5 рангов!', '#38bdf8');
+            if (typeof showFloatText === 'function') showFloatText('👥 Репост: +$500 и +1 Подсказка!', '#38bdf8');
             if (typeof playTone === 'function') playTone(820, 0.25);
         }
     };
     if (typeof vkBridge !== 'undefined') {
         vkBridge.send('VKWebAppShare', { link: appUrl }).then(rewardOnce).catch(() => {});
-    } else if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ handler: 'VKWebAppShare', params: { link: appUrl }, type: 'vk-connect' }, '*');
-        rewardOnce();
     }
 }
 
@@ -487,3 +480,34 @@ function shareGameWithFriends(withBonus) {
             }
         }
     });
+
+// =========================================================================
+// === ОТКАТ ТАЙНЫХ ШАРОВ (?) ПРИ НАЖАТИИ «ОТМЕНА» (ЗАЩИТА ОТ ПРОСВЕТА) ===
+// =========================================================================
+let maskHistoryStack = [];
+
+const origGenMaskStack = generateLevel;
+generateLevel = function(lvl) {
+    maskHistoryStack = [];
+    origGenMaskStack(lvl);
+};
+
+const origClickSaveMask = onTubeClick;
+onTubeClick = function(idx) {
+    const prevMoves = movesCount;
+    const snapMask = JSON.parse(JSON.stringify(revealedMask || []));
+    origClickSaveMask(idx);
+    if (movesCount > prevMoves) {
+        maskHistoryStack.push(snapMask);
+    }
+};
+
+const origUndoRestoreMask = undoMove;
+undoMove = function() {
+    const prevMoves = movesCount;
+    origUndoRestoreMask();
+    if (movesCount < prevMoves && maskHistoryStack.length > 0) {
+        revealedMask = maskHistoryStack.pop();
+        renderBoard();
+    }
+};
