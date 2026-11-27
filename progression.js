@@ -1260,8 +1260,9 @@ const DAILY_CALENDAR = [
     { day: 3, coins: 1000,  hint: 0, tube: 0, exp: 1000, label: { ru: '$1000 + ⭐1000',        en: '$1000 + ⭐1000',        tr: '$1000 + ⭐1000' } },
     { day: 4, coins: 2000,  hint: 0, tube: 3, exp: 0,    label: { ru: '$2000 + 🧪3',           en: '$2000 + 🧪3',           tr: '$2000 + 🧪3' } },
     { day: 5, coins: 3500,  hint: 5, tube: 0, exp: 0,    label: { ru: '$3500 + 💡5',           en: '$3500 + 💡5',           tr: '$3500 + 💡5' } },
-    { day: 6, coins: 7500,  hint: 0, tube: 0, exp: 2500, label: { ru: '$7500 + ⭐2500',        en: '$7500 + ⭐2500',        tr: '$7500 + ⭐2500' } },
-    { day: 7, coins: 10000, hint: 5, tube: 5, exp: 5000, label: { ru: '$10000 + 💡5 + 🧪5 + ⭐5000', en: '$10000 + 💡5 + 🧪5 + ⭐5000', tr: '$10000 + 💡5 + 🧪5 + ⭐5000' } }
+    { day: 6, coins: 7500,  hint: 0, tube: 0, exp: 2500, label: { ru: '$7 500 + ⭐2500',        en: '$7,500 + ⭐2500',        tr: '$7.500 + ⭐2500' } },
+    { day: 7, coins: 10000, hint: 5, tube: 5, exp: 5000, label: { ru: '$10 000 + 💡5 + 🧪5 + ⭐5000', en: '$10,000 + 💡5 + 🧪5 + ⭐5000', tr: '$10.000 + 💡5 + 🧪5 + ⭐5000' } }
+
 
 ];
 
@@ -1288,7 +1289,7 @@ openDaily = function() {
     const dayWord = currentLang === 'en' ? 'Day' : (currentLang === 'tr' ? 'Gün' : 'День');
 
     const cardsHtml = DAILY_CALENDAR.map((item, idx) => {
-        const isPast = idx < dayIdx || (idx === dayIdx && claimedToday);
+        const isPast = idx < dayIdx;
         const isToday = idx === dayIdx && !claimedToday;
         const border = isToday ? '2px solid #fbbf24' : (isPast ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.14)');
         const bg = isToday ? 'rgba(251,191,36,0.18)' : (isPast ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.05)');

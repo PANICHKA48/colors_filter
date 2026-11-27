@@ -339,7 +339,7 @@ function shareGameWithFriends(withBonus) {
                 btn.id = 'vk-share-modal-btn';
                 btn.className = 'action-btn modal-btn';
                 btn.style.cssText = 'background:linear-gradient(135deg,#2563eb,#7c3aed);margin-top:4px;';
-                btn.textContent = '👥 Поделиться с друзьями (+$10 000 и +5 ур.)';
+                btn.textContent = '👥 Поделиться с друзьями (+$500 и +1 💡)';
                 btn.onclick = () => shareGameWithFriends(true);
                 const lastBtn = winModal.querySelector('button:last-of-type');
                 if (lastBtn) winModal.insertBefore(btn, lastBtn); else winModal.appendChild(btn);
