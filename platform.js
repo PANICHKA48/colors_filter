@@ -384,15 +384,24 @@ function shareGameWithFriends(withBonus) {
     setTimeout(() => {
         if (typeof window.showFloatText === 'function') {
             const origFloat = window.showFloatText;
+            let lastFloatMsg = '', lastFloatTime = 0;
             window.showFloatText = function(text, color) {
-                    if (typeof text === 'string' && text.includes('ЛЕДЯНЫЕ КОЛБЫ')) {
-                    const hasRealIce = document.querySelectorAll('.frozen, [data-frozen="true"]').length > 0 ||
-                        (typeof frozenTubes !== 'undefined' && frozenTubes.length > 0);
-                    if (!hasRealIce) return;
-                }
-                if (typeof text === 'string' && (text.includes('Серия x') || text.includes('СУНДУК СЕРИИ'))) {
-                    if (streakShownThisWin) return;
-                    streakShownThisWin = true;
+                if (typeof text === 'string') {
+                    // Блокируем ложное уведомление о тайном этапе, если реальный этап не кратен 5
+                    if (text.includes('ТАЙНЫЙ ЭТАП') || text.includes('MYSTERY STAGE') || text.includes('GİZEMLİ AŞAMA')) {
+                        if (typeof state !== 'undefined' && (state.level < 5 || state.level % 5 !== 0)) return;
+                    }
+                    // Блокируем ложное уведомление о льде, если замороженных колб нет
+                    if (text.includes('ЛЕДЯНЫЕ КОЛБЫ') || text.includes('FROZEN TUBES') || text.includes('DONMUŞ TÜPLER')) {
+                        const hasRealIce = document.querySelectorAll('.frozen-tube, .frozen').length > 0 ||
+                            (typeof frozenTubes !== 'undefined' && frozenTubes.length > 0);
+                        if (!hasRealIce) return;
+                    }
+                    // Не дублируем одинаковую плашку дважды подряд при синхронизации с облаком
+                    const now = Date.now();
+                    if (text === lastFloatMsg && now - lastFloatTime < 2500) return;
+                    lastFloatMsg = text;
+                    lastFloatTime = now;
                 }
                 return origFloat.apply(this, arguments);
             };

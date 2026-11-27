@@ -1191,3 +1191,164 @@ onTubeClick = function(idx) {
         }
     }, 260);
 };
+// =========================================================================
+// === ПАТЧ: ЗАЩИТА ОТ ФАРМА EXP ЧЕРЕЗ UNDO И СБРОС СЕРИИ ПРИ ПОДСКАЗКЕ ===
+// =========================================================================
+
+// 1. Опыт за ход (+5 EXP) начисляется только при движении вперёд, а не после «Отмены»
+let maxMovesThisStage = 0;
+const origGenForExpGuard = generateLevel;
+generateLevel = function(lvl) {
+    maxMovesThisStage = 0;
+    origGenForExpGuard(lvl);
+};
+
+const origGainExpUndoGuard = gainExp;
+gainExp = function(pts) {
+    // Если это начисление +5 EXP за обычный ход, проверяем, побит ли рекорд ходов на этапе
+    if (pts === 5) {
+        if (movesCount <= maxMovesThisStage) return;
+        maxMovesThisStage = movesCount;
+    }
+    origGainExpUndoGuard(pts);
+};
+
+// 2. Мгновенный и гарантированный сброс серии побед при любом использовании Подсказки (билет или реклама)
+function resetStreakOnHintUse() {
+    if (typeof prog !== 'undefined' && prog.winStreak > 0) {
+        prog.winStreak = 0;
+        if (typeof saveProg === 'function') saveProg();
+        if (typeof updateStreakUI === 'function') updateStreakUI();
+        const brkTxt = currentLang === 'en'
+            ? '💔 Streak reset (Hint used)'
+            : (currentLang === 'tr' ? '💔 Seri sıfırlandı (İpucu)' : '💔 Серия сброшена (использована подсказка)');
+        setTimeout(() => showFloatText(brkTxt, '#f87171'), 600);
+    }
+}
+
+const finalWrapUseHintAd = useHintAd;
+useHintAd = function() {
+    const move = typeof findBestMove === 'function' ? findBestMove() : null;
+    if (!move) {
+        finalWrapUseHintAd();
+        return;
+    }
+    // Если тратится билет — сбрасываем серию сразу
+    if (typeof extraTickets !== 'undefined' && extraTickets.hint > 0) {
+        finalWrapUseHintAd();
+        resetStreakOnHintUse();
+        return;
+    }
+    // Если за рекламу — перехватываем показ награды, чтобы сбросить серию строго после просмотра
+    const origShowRew = window.showRewarded;
+    window.showRewarded = function(cb) {
+        origShowRew(() => {
+            if (typeof cb === 'function') cb();
+            resetStreakOnHintUse();
+        });
+    };
+    finalWrapUseHintAd();
+    window.showRewarded = origShowRew;
+};
+// =========================================================================
+// === 7-ДНЕВНЫЙ КАЛЕНДАРЬ ЕЖЕДНЕВНЫХ НАГРАД (МОТИВАЦИЯ ВОЗВРАТА В ИГРУ) ===
+// =========================================================================
+
+const DAILY_CALENDAR = [
+    { day: 1, coins: 300,   hint: 0, tube: 0, exp: 0,    label: { ru: '$300',                  en: '$300',                  tr: '$300' } },
+    { day: 2, coins: 650,   hint: 3, tube: 0, exp: 0,    label: { ru: '$650 + 💡3',            en: '$650 + 💡3',            tr: '$650 + 💡3' } },
+    { day: 3, coins: 1000,  hint: 0, tube: 0, exp: 1000, label: { ru: '$1000 + ⭐1000',        en: '$1000 + ⭐1000',        tr: '$1000 + ⭐1000' } },
+    { day: 4, coins: 2000,  hint: 0, tube: 3, exp: 0,    label: { ru: '$2000 + 🧪3',           en: '$2000 + 🧪3',           tr: '$2000 + 🧪3' } },
+    { day: 5, coins: 3500,  hint: 5, tube: 0, exp: 0,    label: { ru: '$3500 + 💡5',           en: '$3500 + 💡5',           tr: '$3500 + 💡5' } },
+    { day: 6, coins: 7500,  hint: 0, tube: 0, exp: 2500, label: { ru: '$7500 + ⭐2500',        en: '$7500 + ⭐2500',        tr: '$7500 + ⭐2500' } },
+    { day: 7, coins: 10000, hint: 5, tube: 5, exp: 5000, label: { ru: '$10000 + 💡5 + 🧪5 + ⭐5000', en: '$10000 + 💡5 + 🧪5 + ⭐5000', tr: '$10000 + 💡5 + 🧪5 + ⭐5000' } }
+
+];
+
+function getDailyStreakState() {
+    const today = new Date();
+    const todayStr = today.toDateString();
+    const yesterday = new Date(today.getTime() - 86400000).toDateString();
+
+    let dayIdx = parseInt(extra.dailyDayIdx || '0', 10);
+    const claimedToday = extra.lastDaily === todayStr;
+
+    if (!claimedToday && extra.lastDaily && extra.lastDaily !== yesterday) {
+        dayIdx = 0;
+    }
+    if (dayIdx < 0 || dayIdx >= 7) dayIdx = 0;
+
+    return { dayIdx, claimedToday, todayStr };
+}
+
+openDaily = function() {
+    closeModals();
+    const { dayIdx, claimedToday } = getDailyStreakState();
+    const curItem = DAILY_CALENDAR[dayIdx];
+    const dayWord = currentLang === 'en' ? 'Day' : (currentLang === 'tr' ? 'Gün' : 'День');
+
+    const cardsHtml = DAILY_CALENDAR.map((item, idx) => {
+        const isPast = idx < dayIdx || (idx === dayIdx && claimedToday);
+        const isToday = idx === dayIdx && !claimedToday;
+        const border = isToday ? '2px solid #fbbf24' : (isPast ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.14)');
+        const bg = isToday ? 'rgba(251,191,36,0.18)' : (isPast ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.05)');
+        const statusIcon = isPast ? '✅' : (isToday ? '🎁' : '🔒');
+        const spanStyle = item.day === 7 ? 'grid-column: span 3;' : '';
+
+        return `<div style="${spanStyle}background:${bg};border:${border};border-radius:10px;padding:7px 4px;text-align:center;">
+            <div style="font-size:10px;font-weight:800;color:${isToday ? '#fbbf24' : '#94a3b8'};">${dayWord} ${item.day} ${statusIcon}</div>
+            <div style="font-size:11px;font-weight:900;color:#fff;margin-top:3px;">${item.label[currentLang] || item.label.ru}</div>
+        </div>`;
+    }).join('');
+
+    const descEl = document.getElementById('d-desc');
+    descEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;margin-bottom:4px;">${cardsHtml}</div>`;
+
+    const btnsEl = document.getElementById('d-btns');
+    if (claimedToday) {
+        const waitTxt = currentLang === 'en' ? 'Come back tomorrow for the next reward!' : (currentLang === 'tr' ? 'Yarınki ödül için tekrar gel!' : 'Заходи завтра за следующей наградой!');
+        btnsEl.innerHTML = `<div style="color:#4ade80;font-weight:800;font-size:13px;padding:6px;">✅ ${waitTxt}</div>`;
+    } else {
+        const rewStr = curItem.label[currentLang] || curItem.label.ru;
+        const claimTxt = currentLang === 'en' ? 'Claim' : (currentLang === 'tr' ? 'Al' : 'Забрать');
+        const adTxt = currentLang === 'en' ? 'Ad' : (currentLang === 'tr' ? 'Reklam' : 'Реклама');
+        btnsEl.innerHTML = `
+            <button class="action-btn btn-next modal-btn" onclick="claimDaily(1)">🎁 ${claimTxt}: ${rewStr}</button>
+            <button class="action-btn btn-ad modal-btn" onclick="claimDaily(2)">📺 ${claimTxt} x2 (${adTxt})</button>
+        `;
+    }
+
+    document.getElementById('daily-modal').style.display = 'flex';
+};
+
+claimDaily = function(mult) {
+    const { dayIdx, claimedToday, todayStr } = getDailyStreakState();
+    if (claimedToday) return;
+
+    const item = DAILY_CALENDAR[dayIdx];
+    const give = () => {
+        extra.lastDaily = todayStr;
+        extra.dailyDayIdx = (dayIdx + 1) % 7;
+        state.coins += item.coins * mult;
+
+        if (typeof extraTickets !== 'undefined') {
+            if (item.hint > 0) extraTickets.hint += item.hint * mult;
+            if (item.tube > 0) extraTickets.tube += item.tube * mult;
+            if (typeof saveTickets === 'function') saveTickets();
+        }
+        if (item.exp > 0 && typeof gainExp === 'function') {
+            gainExp(item.exp * mult);
+        }
+
+        saveExtra();
+        saveProgress();
+        renderBoard();
+        updateAlertBadges();
+        playTone(820, 0.25);
+        openDaily();
+    };
+
+    if (mult > 1) showRewarded(give);
+    else give();
+};
+
