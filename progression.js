@@ -302,7 +302,7 @@ const QUEST_ECONOMY = {
     rk20:  { reward: 700,  exp: 600 },
     l35:   { reward: 750,  exp: 700 },
     rk25:  { reward: 950,  exp: 800 },
-    s9:    { reward: 1000, exp: 900 },
+    s9:    { reward: 1500, exp: 900 },
     m1000: { reward: 600,  exp: 500 },
     l60:   { reward: 1500, exp: 1100 },
     t500:  { reward: 2000, exp: 1400 },
@@ -883,20 +883,6 @@ showFloatText = function(text, color) {
     setTimeout(() => { if (el.parentNode) el.remove(); }, 4200);
 };
 
-var prevHintWithStreakReset = useHintAd;
-useHintAd = function() {
-    var beforeHint = hintPair.length;
-    prevHintWithStreakReset();
-    setTimeout(() => {
-        if (hintPair.length > 0 && beforeHint === 0 && prog.winStreak > 0) {
-            prog.winStreak = 0;
-            saveProg();
-            if (typeof updateStreakUI === 'function') updateStreakUI();
-            var brkTxt = currentLang === 'en' ? '💔 Streak reset (Hint used)' : (currentLang === 'tr' ? '💔 Seri sıfırlandı (İpucu)' : '💔 Серия сброшена (использована подсказка)');
-            setTimeout(() => showFloatText(brkTxt, '#f87171'), 1600);
-        }
-    }, 50);
-};
 var origOpenShopCases = typeof openShop === 'function' ? openShop : null;
 if (origOpenShopCases) {
     openShop = function() {

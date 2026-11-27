@@ -797,7 +797,8 @@ FULL_QUESTS.push(
     { id: 'l35',    type: 'level', target: 35,    reward: 750,   exp: 550,  title: { ru: 'Дойди до 35-го этапа',           en: 'Reach Stage 35',          tr: '35. aşamaya ulaş' } },
     { id: 'l60',    type: 'level', target: 60,    reward: 1800,  exp: 900,  title: { ru: 'Дойди до 60-го этапа',           en: 'Reach Stage 60',          tr: '60. aşamaya ulaş' } },
     { id: 'm2500', type: 'moves', target: 2500, reward: 2000, exp: 1500, title: { ru: 'Сделай 2 500 перекладываний', en: 'Make 2,500 moves', tr: '2.500 hamle yap' } },
-    { id: 's9',     type: 'skins', target: 9,     reward: 1000,  exp: 700,  title: { ru: 'Собери всю коллекцию (9 шт.)',   en: 'Unlock full shop (9/9)',  tr: 'Tüm mağazayı aç (9/9)' } }
+    { id: 's9',     type: 'skins', target: 12,    reward: 1500,  exp: 900,  title: { ru: 'Собери всю коллекцию (12 шт.)',  en: 'Unlock full shop (12/12)', tr: 'Tüm mağazayı aç (12/12)' } }
+
 );
 
 const prevGetQuestProgress = getQuestProgress;
