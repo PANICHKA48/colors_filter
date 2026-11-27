@@ -144,62 +144,56 @@ async function openGlobalSupabaseLeaderboard(sortBy = 'score') {
     });
     listEl.appendChild(tabsRow);
 
-    const statusDiv = document.createElement('div');
-    statusDiv.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;font-size:13px;';
-    statusDiv.textContent = '⏳ Загрузка мирового рейтинга...';
-    listEl.appendChild(statusDiv);
+    const rowsBox = document.createElement('div');
+    listEl.appendChild(rowsBox);
 
-    try {
-        const res = await fetch(SUPABASE_URL + '/rest/v1/leaders?game_id=eq.' + GAME_ID + '&order=' + sortBy + '.desc&limit=50', {
-            headers: getSupabaseHeaders()
-        });
-        const rows = await res.json();
-        statusDiv.remove();
+    const myUid = PlatformSDK.vkUserId ? 'vk_' + PlatformSDK.vkUserId : localStorage.getItem('guest_uid');
+    const cacheKey = 'lb_cache_' + sortBy;
 
+    const renderRows = (rows) => {
         if (!Array.isArray(rows) || rows.length === 0) {
-            const empty = document.createElement('div');
-            empty.style.cssText = 'padding:16px;text-align:center;color:#94a3b8;font-size:13px;';
-            empty.textContent = 'Пока нет записей. Пройди этап!';
-            listEl.appendChild(empty);
+            rowsBox.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;">Пока нет записей. Пройди этап!</div>';
             return;
         }
-
-        const myUid = PlatformSDK.vkUserId ? 'vk_' + PlatformSDK.vkUserId : localStorage.getItem('guest_uid');
-        rows.forEach((r, idx) => {
+        rowsBox.innerHTML = rows.map((r, idx) => {
             const isMe = r.user_id === myUid;
-            const rowEl = document.createElement('div');
-            rowEl.className = 'card-item ' + (isMe ? 'active-skin' : '');
-            rowEl.style.marginBottom = '6px';
+            const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + (idx + 1)));
+            const avatar = r.photo ? `<img src="${r.photo}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;">` : '';
+            const val = sortBy === 'rank' ? '⭐ ' + r.rank : (sortBy === 'coins' ? '$' + Number(r.coins).toLocaleString('ru-RU') : 'Этап ' + r.score);
+            return `<div class="card-item ${isMe ? 'active-skin' : ''}" style="margin-bottom:6px;">
+                <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                    <span style="font-weight:900;min-width:26px;color:#fbbf24;">${medal}</span>
+                    ${avatar}
+                    <span style="font-weight:700;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">${(r.name || 'Игрок') + (isMe ? ' (Вы)' : '')}</span>
+                </div>
+                <strong style="font-size:13px;color:#38bdf8;white-space:nowrap;">${val}</strong>
+            </div>`;
+        }).join('');
+    };
 
-            const left = document.createElement('div');
-            left.style.cssText = 'display:flex;align-items:center;gap:8px;min-width:0;';
-            const medal = document.createElement('span');
-            medal.style.cssText = 'font-weight:900;min-width:26px;color:#fbbf24;';
-            medal.textContent = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : '#' + (idx + 1)));
-            left.appendChild(medal);
+    // 1. Мгновенно показываем кэш с телефона за 0 мс, если он есть
+    try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+        if (cached && cached.length > 0) renderRows(cached);
+        else rowsBox.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;">⏳ Загрузка рейтинга...</div>';
+    } catch (e) {}
 
-            if (r.photo) {
-                const img = document.createElement('img');
-                img.src = r.photo;
-                img.style.cssText = 'width:26px;height:26px;border-radius:50%;object-fit:cover;';
-                left.appendChild(img);
-            }
-
-            const nameSpan = document.createElement('span');
-            nameSpan.style.cssText = 'font-weight:700;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;';
-            nameSpan.textContent = (r.name || 'Игрок') + (isMe ? ' (Вы)' : '');
-            left.appendChild(nameSpan);
-
-            const valSpan = document.createElement('strong');
-            valSpan.style.cssText = 'font-size:13px;color:#38bdf8;white-space:nowrap;';
-            valSpan.textContent = sortBy === 'rank' ? '⭐ ' + r.rank : (sortBy === 'coins' ? '$' + Number(r.coins).toLocaleString('ru-RU') : 'Этап ' + r.score);
-
-            rowEl.appendChild(left);
-            rowEl.appendChild(valSpan);
-            listEl.appendChild(rowEl);
-        });
+    // 2. В фоне запрашиваем только лёгкие колонки (без тяжёлого save_data!) с таймаутом 6 сек
+    try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const url = `${SUPABASE_URL}/rest/v1/leaders?game_id=eq.${GAME_ID}&select=user_id,name,photo,score,rank,coins&order=${sortBy}.desc&limit=50`;
+        const res = await fetch(url, { headers: getSupabaseHeaders(), signal: ctrl.signal });
+        clearTimeout(timer);
+        const rows = await res.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+            localStorage.setItem(cacheKey, JSON.stringify(rows));
+            renderRows(rows);
+        }
     } catch (e) {
-        statusDiv.textContent = '⚠️ Нет связи с сервером рейтинга';
+        if (!rowsBox.querySelector('.card-item')) {
+            rowsBox.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:13px;">⚠️ Медленный интернет. Попробуйте ещё раз</div>';
+        }
     }
 }
 
@@ -232,7 +226,19 @@ function shareGameWithFriends(withBonus) {
     if (isVk) {
         PlatformSDK.type = 'vk';
         setTimeout(restoreProgressFromSupabase, 350);
-
+        // Фоновый прогрев рейтинга сразу при входе в игру для мгновенного открытия 🏆
+        setTimeout(() => {
+            fetch(`${SUPABASE_URL}/rest/v1/leaders?game_id=eq.${GAME_ID}&select=user_id,name,photo,score,rank,coins&order=score.desc&limit=50`, {
+                headers: getSupabaseHeaders()
+            })
+            .then(r => r.json())
+            .then(rows => {
+                if (Array.isArray(rows) && rows.length > 0) {
+                    localStorage.setItem('lb_cache_score', JSON.stringify(rows));
+                }
+            })
+            .catch(() => {});
+        }, 800);
         const hookVk = () => {
             if (typeof vkBridge === 'undefined' || PlatformSDK.vkHooked) return;
             PlatformSDK.vkHooked = true;
