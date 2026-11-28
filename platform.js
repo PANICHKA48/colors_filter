@@ -287,11 +287,11 @@ function shareGameWithFriends(withBonus) {
             };
         };
 
-        hookVk();
         let t = 0;
         const iv = setInterval(() => { hookVk(); if (PlatformSDK.vkHooked || ++t > 20) clearInterval(iv); }, 200);
-        window.openLeaderboard = () => { syncLeaderToSupabase(); openGlobalSupabaseLeaderboard('score'); };
     }
+    window.openLeaderboard = () => { syncLeaderToSupabase(); openGlobalSupabaseLeaderboard('score'); };
+
 
     const origSave = window.saveProgress;
     window.saveProgress = function() {
@@ -300,6 +300,8 @@ function shareGameWithFriends(withBonus) {
     };
 
     window.addEventListener('load', () => {
+        window.openLeaderboard = () => { syncLeaderToSupabase(); openGlobalSupabaseLeaderboard('score'); };
+
         if (PlatformSDK.type === 'vk') {
             const topLeft = document.querySelector('.top-bar .btn-group');
             const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
